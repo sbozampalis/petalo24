@@ -1,0 +1,16 @@
+name = "petalo-site"
+main = "worker.js"
+compatibility_date = "2026-09-10"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[kv_namespaces]]
+binding = "SURVEY_KV"
+id = "ad67da4d16c9434d8a8335a901c49a61"
+
+[[routes]]
+pattern = "petalo24.gr"
+custom_domain = true
