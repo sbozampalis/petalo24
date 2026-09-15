@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Petalo — Admin</title>
+<style>
+  :root{
+    --ground:#170B22;
+    --ground-deep:#0F0718;
+    --panel:#2A1440;
+    --panel-line:rgba(231,196,104,0.22);
+    --ink:#F3ECDD;
+    --ink-soft:#C6B7DA;
+    --gold:#CBA046;
+    --gold-bright:#E7C468;
+    --green:#4CAF7D;
+    --red:#C8202F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:var(--ground);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:920px; margin:0 auto; padding:2.5rem 1.25rem 4rem;}
+  h1{
+    font-size:1.4rem; letter-spacing:0.02em; margin:0 0 0.25rem;
+    color:var(--gold-bright);
+  }
+  .sub{color:var(--ink-soft); font-size:0.9rem; margin:0 0 2rem;}
+  .login-box{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:10px;
+    padding:1.5rem; max-width:360px; margin-bottom:2rem;
+  }
+  .login-box label{display:block; font-size:0.8rem; color:var(--ink-soft); margin-bottom:0.4rem;}
+  .login-box input{
+    width:100%; padding:0.6rem 0.7rem; border-radius:6px; border:1px solid var(--panel-line);
+    background:var(--ground-deep); color:var(--ink); font-size:0.95rem; margin-bottom:0.9rem;
+  }
+  .login-box input:focus{outline:2px solid var(--gold-bright); outline-offset:1px;}
+  button{
+    background:var(--gold); color:var(--ground-deep); border:none; border-radius:6px;
+    padding:0.6rem 1.1rem; font-weight:700; font-size:0.9rem; cursor:pointer;
+  }
+  button:hover{background:var(--gold-bright);}
+  button:disabled{opacity:0.6; cursor:default;}
+  .error{color:var(--red); font-size:0.85rem; margin-top:0.5rem; min-height:1.2em;}
+  .summary{display:flex; gap:1rem; flex-wrap:wrap; margin-bottom:1.75rem;}
+  .stat{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:10px;
+    padding:1rem 1.25rem; min-width:130px;
+  }
+  .stat .n{font-size:1.6rem; font-weight:700; color:var(--gold-bright);}
+  .stat .l{font-size:0.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.06em;}
+  table{width:100%; border-collapse:collapse; background:var(--panel); border-radius:10px; overflow:hidden;}
+  th, td{text-align:left; padding:0.65rem 0.8rem; border-bottom:1px solid var(--panel-line); font-size:0.88rem; vertical-align:top;}
+  th{color:var(--ink-soft); font-weight:600; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em;}
+  tr:last-child td{border-bottom:none;}
+  .yes{color:var(--green); font-weight:700;}
+  .no{color:var(--red); font-weight:700;}
+  .emails{color:var(--ink-soft); font-size:0.8rem; word-break:break-word;}
+  .hidden{display:none;}
+  .toolbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; gap:1rem; flex-wrap:wrap;}
+  .toolbar button{background:transparent; border:1px solid var(--panel-line); color:var(--ink-soft); font-weight:500;}
+  .toolbar button:hover{color:var(--ink); border-color:var(--gold);}
+  .empty{color:var(--ink-soft); font-size:0.9rem; padding:1rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Petalo — Survey Results</h1>
+  <p class="sub">Private page. "Would you buy this?" votes collected from the site.</p>
+
+  <div class="login-box" id="loginBox">
+    <label for="pw">Admin password</label>
+    <input type="password" id="pw" autocomplete="current-password" placeholder="Enter password">
+    <button type="button" id="loginBtn">View results</button>
+    <div class="error" id="loginError"></div>
+  </div>
+
+  <div id="results" class="hidden">
+    <div class="toolbar">
+      <div class="summary" id="summary"></div>
+      <button type="button" id="refreshBtn">Refresh</button>
+    </div>
+    <div id="tableWrap"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var SESSION_KEY = 'petalo-admin-pw';
+  var pwInput = document.getElementById('pw');
+  var loginBtn = document.getElementById('loginBtn');
+  var loginError = document.getElementById('loginError');
+  var loginBox = document.getElementById('loginBox');
+  var resultsEl = document.getElementById('results');
+  var summaryEl = document.getElementById('summary');
+  var tableWrap = document.getElementById('tableWrap');
+  var refreshBtn = document.getElementById('refreshBtn');
+
+  function fmtStat(n, label){
+    return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+label+'</div></div>';
+  }
+
+  function render(data){
+    summaryEl.innerHTML =
+      fmtStat(data.total, 'Total Votes') +
+      fmtStat(data.totalYes, 'Yes') +
+      fmtStat(data.totalNo, 'No');
+
+    var products = Object.keys(data.byProduct).sort(function(a, b){
+      var ta = data.byProduct[a].yes + data.byProduct[a].no;
+      var tb = data.byProduct[b].yes + data.byProduct[b].no;
+      return tb - ta;
+    });
+
+    if(products.length === 0){
+      tableWrap.innerHTML = '<div class="empty">No votes recorded yet.</div>';
+      return;
+    }
+
+    var rows = products.map(function(p){
+      var row = data.byProduct[p];
+      var emails = row.emails.length ? row.emails.join(', ') : '—';
+      return '<tr>' +
+        '<td>'+p+'</td>' +
+        '<td class="yes">'+row.yes+'</td>' +
+        '<td class="no">'+row.no+'</td>' +
+        '<td class="emails">'+emails+'</td>' +
+      '</tr>';
+    }).join('');
+
+    tableWrap.innerHTML =
+      '<table><thead><tr>' +
+        '<th>Product</th><th>Yes</th><th>No</th><th>Emails (yes votes)</th>' +
+      '</tr></thead><tbody>'+rows+'</tbody></table>';
+  }
+
+  function fetchVotes(password){
+    loginError.textContent = '';
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Loading…';
+    fetch('/api/admin/votes', { headers: { 'x-admin-password': password } })
+      .then(function(res){
+        if(res.status === 401){ throw new Error('wrong_password'); }
+        if(!res.ok){ throw new Error('server_error'); }
+        return res.json();
+      })
+      .then(function(data){
+        if(!data.ok){ throw new Error('server_error'); }
+        try{ sessionStorage.setItem(SESSION_KEY, password); }catch(e){}
+        loginBox.classList.add('hidden');
+        resultsEl.classList.remove('hidden');
+        render(data);
+      })
+      .catch(function(err){
+        if(err.message === 'wrong_password'){
+          loginError.textContent = 'Incorrect password.';
+        }else{
+          loginError.textContent = 'Something went wrong. Try again.';
+        }
+        try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+      })
+      .finally(function(){
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'View results';
+      });
+  }
+
+  loginBtn.addEventListener('click', function(){
+    var pw = pwInput.value || '';
+    if(!pw){ loginError.textContent = 'Enter the password.'; return; }
+    fetchVotes(pw);
+  });
+  pwInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); loginBtn.click(); }
+  });
+  refreshBtn.addEventListener('click', function(){
+    var pw = (function(){ try{ return sessionStorage.getItem(SESSION_KEY) || ''; }catch(e){ return ''; } })();
+    if(pw) fetchVotes(pw);
+  });
+
+  var saved = (function(){ try{ return sessionStorage.getItem(SESSION_KEY) || ''; }catch(e){ return ''; } })();
+  if(saved){
+    pwInput.value = saved;
+    fetchVotes(saved);
+  }
+})();
+</script>
+</body>
+</html>
