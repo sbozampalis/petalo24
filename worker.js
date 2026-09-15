@@ -6,6 +6,10 @@ export default {
       return handleVote(request, env);
     }
 
+    if (request.method === 'GET' && url.pathname === '/api/admin/votes') {
+      return handleAdminVotes(request, env);
+    }
+
     return env.ASSETS.fetch(request);
   }
 };
@@ -42,9 +46,5 @@ async function handleVote(request, env) {
   return json({ ok: true });
 }
 
-function json(obj, status) {
-  return new Response(JSON.stringify(obj), {
-    status: status || 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
+async function handleAdminVotes(request, env) {
+  const
