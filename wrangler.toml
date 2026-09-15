@@ -11,6 +11,9 @@ not_found_handling = "single-page-application"
 binding = "SURVEY_KV"
 id = "ad67da4d16c9434d8a8335a901c49a61"
 
+[vars]
+ADMIN_PASSWORD = "XeitZSOkHfUGqmRa"
+
 [[routes]]
 pattern = "petalo24.gr"
 custom_domain = true
