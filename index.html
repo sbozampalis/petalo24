@@ -1,1382 +1,322 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="el">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Petalo</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Poppins:wght@600;700;800&family=Alegreya:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap">
-</head>
-<body>
-<style id="app-style">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="PETALO Arcade — ρετρό arcade ποδόσφαιρο με τις ομάδες σου.">
+<meta property="og:title" content="PETALO Arcade">
+<meta property="og:description" content="Ρετρό arcade ποδόσφαιρο. Διάλεξε ομάδα, κέρδισε το κύπελλο.">
+<meta property="og:type" content="website">
+<title>PETALO Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+<style>
   :root{
-    --ground:#170B22;
-    --ground-deep:#0F0718;
-    --panel:#2A1440;
-    --panel-line:rgba(231,196,104,0.22);
-    --hair:rgba(243,236,221,0.14);
-    --ink:#F3ECDD;
-    --ink-soft:#C6B7DA;
-    --gold:#CBA046;
-    --gold-bright:#E7C468;
-    --shadow:rgba(0,0,0,0.55);
+    --plum:#2a1145;
+    --plum-deep:#180a2b;
+    --plum-lift:#43206b;
+    --gold:#ffd21e;
+    --cream:#f6efe2;
+    --pitch:#3f9e39;
   }
-  *{box-sizing:border-box;}
-  html{-webkit-text-size-adjust:100%;}
-  body{
-    margin:0;
-    color:var(--ink);
-    background:
-      radial-gradient(1px 1px at 12% 22%, rgba(243,236,221,0.28) 50%, transparent 52%),
-      radial-gradient(1.5px 1.5px at 82% 14%, rgba(243,236,221,0.22) 50%, transparent 52%),
-      radial-gradient(1px 1px at 62% 68%, rgba(243,236,221,0.18) 50%, transparent 52%),
-      radial-gradient(1px 1px at 34% 82%, rgba(243,236,221,0.16) 50%, transparent 52%),
-      radial-gradient(1.5px 1.5px at 92% 55%, rgba(243,236,221,0.2) 50%, transparent 52%),
-      radial-gradient(1px 1px at 46% 38%, rgba(243,236,221,0.14) 50%, transparent 52%),
-      var(--ground);
-    font-family:'Alegreya', Georgia, 'Times New Roman', serif;
-    line-height:1.6;
-    position:relative;
-  }
-  a{color:inherit;}
-  img{max-width:100%; display:block;}
-  h1,h2,h3{
-    font-family:'Oswald','Arial Narrow',sans-serif;
-    text-transform:uppercase;
-    letter-spacing:0.03em;
-    text-wrap:balance;
-    margin:0;
-    color:var(--ink);
-  }
-  .wrap{max-width:1180px; margin:0 auto; padding-inline:clamp(1.25rem,4vw,3rem);}
-  .eyebrow{
-    font-family:'Oswald',sans-serif;
-    font-weight:600;
-    font-size:0.72rem;
-    letter-spacing:0.22em;
-    text-transform:uppercase;
-    color:var(--gold-bright);
-  }
-  :focus-visible{outline:2px solid var(--gold-bright); outline-offset:3px;}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--plum-deep);overflow:hidden;color:var(--cream);
+       font-family:"Roboto Condensed","Helvetica Neue",Arial,sans-serif;
+       -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+  #wrap{position:fixed;inset:0;overflow:hidden}
+  canvas#c{display:block;width:100%;height:100%;
+      image-rendering:pixelated;image-rendering:crisp-edges}
 
-  .grain-overlay{position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:60; opacity:0.5; mix-blend-mode:overlay;}
+  /* ---------------- in-match HUD ---------------- */
+  #hud{position:absolute;inset:0;pointer-events:none;padding-top:env(safe-area-inset-top,0px)}
+  .scorebar{position:absolute;top:8px;left:0;right:0;display:flex;align-items:flex-start;
+      justify-content:center;gap:6px;padding:0 8px;
+      filter:drop-shadow(0 3px 7px rgba(0,0,0,.5))}
+  .panel{background:linear-gradient(var(--plum-lift),var(--plum));
+      border:2px solid var(--cream);border-radius:3px;display:flex;align-items:center;
+      box-shadow:inset 0 0 0 1px rgba(0,0,0,.6)}
+  .sb-team{gap:6px;padding:3px 6px}
+  .crest{width:26px;height:19px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.5);
+      display:flex;flex-direction:column;overflow:hidden}
+  .crest i{flex:1}
+  .led{font-weight:700;color:var(--gold);text-shadow:0 0 9px rgba(255,190,0,.7);
+      font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1}
+  .sb-score{font-size:26px;padding:3px 11px;min-width:30px;text-align:center}
+  .sb-ab{font-size:13px;color:var(--cream);letter-spacing:1px;padding:0 4px}
+  .sb-clock{font-size:23px;padding:3px 14px;min-width:96px;text-align:center}
 
-  /* ---------- header ---------- */
-  .site-header{
-    position:sticky; top:0; z-index:20;
-    background:rgba(15,7,24,0.86);
-    backdrop-filter:blur(6px);
-    border-bottom:1px solid var(--hair);
-  }
-  .site-header .wrap{
-    display:flex; align-items:center; justify-content:space-between;
-    padding-block:0.75rem;
-  }
-  .brand{display:flex; align-items:center; gap:0.55rem; text-decoration:none;}
-  .brand img{width:1.85rem; height:auto;}
-  .brand span{
-    font-family:'Poppins',sans-serif; font-weight:800;
-    font-size:1.15rem; letter-spacing:0.06em; color:var(--gold-bright);
-  }
-  .header-right{display:flex; align-items:center; gap:1.2rem;}
-  nav.main-nav{display:flex; align-items:center; gap:1.6rem;}
-  nav.main-nav a{
-    font-family:'Oswald', sans-serif;
-    font-weight:500;
-    font-size:0.76rem;
-    letter-spacing:0.12em;
-    text-transform:uppercase;
-    text-decoration:none;
-    color:var(--ink-soft);
-    padding-bottom:2px;
-    border-bottom:1px solid transparent;
-  }
-  nav.main-nav a:hover{color:var(--ink); border-color:var(--gold);}
-  nav.main-nav a.ig{color:var(--gold-bright);}
-  @media (max-width:640px){ nav.main-nav{display:none;} }
+  #radar{position:absolute;left:50%;transform:translateX(-50%);
+      bottom:calc(8px + env(safe-area-inset-bottom,0px));
+      width:168px;height:106px;border:2px solid rgba(246,239,226,.75);border-radius:3px;
+      background:rgba(24,10,43,.6);opacity:.93}
+  .formation{position:absolute;bottom:calc(12px + env(safe-area-inset-bottom,0px));
+      font-size:11px;letter-spacing:1px;text-shadow:0 2px 3px rgba(0,0,0,.85)}
+  .formation b{color:var(--gold);font-size:13px;display:block}
+  #formL{left:14px} #formR{right:14px;text-align:right}
 
-  .lang-toggle{display:flex; border:1px solid var(--panel-line); border-radius:2px; overflow:hidden;}
-  .lang-toggle button{
-    font-family:'Oswald',sans-serif; font-weight:600; font-size:0.7rem; letter-spacing:0.08em;
-    padding:0.4rem 0.6rem; background:transparent; color:var(--ink-soft); border:none; cursor:pointer;
-  }
-  .lang-toggle button[aria-pressed="true"]{background:var(--gold); color:var(--ground-deep);}
-  .lang-toggle button:not([aria-pressed="true"]):hover{color:var(--ink);}
+  #caption{position:absolute;top:34%;left:50%;transform:translate(-50%,-50%) scale(.6);
+      font-size:min(13vw,92px);letter-spacing:4px;text-align:center;opacity:0;line-height:1;
+      white-space:nowrap;color:#fff;
+      text-shadow:0 0 22px rgba(0,0,0,.9), 0 5px 0 rgba(0,0,0,.5);
+      transition:opacity .18s ease, transform .18s cubic-bezier(.2,1.6,.4,1)}
+  #caption.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  #caption small{display:block;font-size:.3em;letter-spacing:3px;opacity:.85;margin-top:.5em}
 
-  /* ---------- hero ---------- */
-  .hero{
-    position:relative; overflow:hidden;
-    background:
-      radial-gradient(ellipse 760px 520px at 78% -8%, rgba(203,160,70,0.20), transparent 60%),
-      linear-gradient(100deg, rgba(15,7,24,0.95) 0%, rgba(15,7,24,0.86) 40%, rgba(15,7,24,0.62) 100%),
-      url("/images/hero-bg.jpg") center 30%/cover no-repeat;
-    padding-block: clamp(2.8rem, 6vw, 4.6rem) clamp(2.4rem, 5vw, 3.6rem);
-  }
-  .hero .wrap{
-    display:grid;
-    grid-template-columns: minmax(0,1fr) minmax(200px, 320px);
-    gap: clamp(1.5rem, 4vw, 3rem);
-    align-items:center;
-  }
-  @media (max-width:820px){ .hero .wrap{grid-template-columns:1fr;} }
-  .hero h1{
-    font-size:clamp(2.4rem, 6.6vw, 4.4rem);
-    line-height:1.02;
-    margin-block:0.6rem 1.1rem;
-    color:var(--ink);
-  }
-  .hero-tagline{
-    font-style:italic; font-family:'Alegreya',serif; font-weight:500;
-    font-size:0.98rem; color:var(--gold-bright); margin:0 0 0.9rem;
-  }
-  .hero-sub{
-    font-size:clamp(1.02rem, 1.8vw, 1.18rem);
-    max-width:38ch;
-    color:var(--ink-soft);
-    margin-bottom:1.7rem;
-  }
-  .cta{
-    display:inline-flex; align-items:center; gap:0.6rem;
-    font-family:'Oswald',sans-serif; font-weight:600;
-    font-size:0.85rem; letter-spacing:0.1em; text-transform:uppercase;
-    color:var(--ground-deep);
-    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
-    text-decoration:none;
-    padding:0.85rem 1.5rem;
-    border-radius:2px;
-    box-shadow:0 10px 24px -10px rgba(203,160,70,0.55);
-  }
-  .cta:hover{filter:brightness(1.08);}
-  .hero-art{display:flex; justify-content:center; align-items:center;}
-  .hero-art img{width:100%; max-width:270px; height:auto; filter:drop-shadow(0 0 26px rgba(203,160,70,0.35));}
-  @media (prefers-reduced-motion:no-preference){
-    .hero-art img{animation:glow 7s ease-in-out infinite alternate;}
-  }
-  @keyframes glow{
-    from{filter:drop-shadow(0 0 18px rgba(203,160,70,0.28));}
-    to{filter:drop-shadow(0 0 34px rgba(203,160,70,0.55));}
-  }
+  #power{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+      width:min(46vw,260px);height:11px;background:rgba(0,0,0,.6);
+      border:2px solid rgba(246,239,226,.4);border-radius:7px;overflow:hidden;opacity:0;
+      transition:opacity .12s}
+  #power.on{opacity:1}
+  #power i{display:block;height:100%;width:0%;
+      background:linear-gradient(90deg,#3ddc6b,var(--gold) 55%,#ff3b30)}
 
-  /* ---------- section heads ---------- */
-  section{padding-block:clamp(2.6rem, 5vw, 4.2rem);}
-  .section-head{
-    display:flex; align-items:baseline; justify-content:space-between; gap:1rem;
-    margin-bottom:2rem;
-    padding-bottom:0.9rem;
-    border-bottom:1px solid var(--hair);
-  }
-  .section-head h2{font-size:clamp(1.7rem, 4vw, 2.4rem); margin-top:0.3rem;}
-  .section-head .count{
-    font-family:'Oswald', sans-serif; font-weight:500;
-    font-size:0.78rem; letter-spacing:0.05em; color:var(--ink-soft); white-space:nowrap;
-  }
+  #fps{position:absolute;right:14px;top:calc(62px + env(safe-area-inset-top,0px));
+      color:rgba(246,239,226,.5);font-size:11px;letter-spacing:1px;
+      font-variant-numeric:tabular-nums}
+  #hint{position:absolute;left:14px;bottom:calc(58px + env(safe-area-inset-bottom,0px));
+      color:rgba(246,239,226,.6);font-size:12px;line-height:1.55}
+  #hint b{color:var(--gold)}
 
-  /* ---------- team drop grid ---------- */
-  .team-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
-    gap:clamp(1.1rem, 2.5vw, 1.6rem);
-    margin-bottom:clamp(2.2rem, 4vw, 3.2rem);
-  }
-  .team-card{
-    position:relative;
-    background:var(--panel);
-    border:1px solid var(--panel-line);
-    display:flex; flex-direction:column;
-  }
-  .team-card::before, .team-card::after{content:""; position:absolute; width:16px; height:16px; pointer-events:none;}
-  .team-card::before{top:-1px; left:-1px; border-top:2px solid var(--gold); border-left:2px solid var(--gold);}
-  .team-card::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--gold); border-right:2px solid var(--gold);}
-  .team-media{aspect-ratio:1/1; background:var(--ground-deep); overflow:hidden; display:flex; align-items:center; justify-content:center;}
-  .team-media img{width:100%; height:100%; object-fit:cover;}
-  .team-media svg{width:60%; height:auto;}
-  .team-body{padding:1.15rem 1.25rem 1.4rem; display:flex; flex-direction:column; gap:0.5rem; flex:1;}
-  .pill{
-    align-self:flex-start;
-    font-family:'Oswald',sans-serif; font-weight:600;
-    font-size:0.63rem; letter-spacing:0.12em; text-transform:uppercase;
-    padding:0.28rem 0.6rem;
-    border:1px solid var(--panel-line);
-  }
-  .pill.ready{color:var(--gold-bright);}
-  .pill.design{color:var(--ink-soft); border-color:var(--hair);}
-  .team-body .sub{
-    font-family:'Oswald',sans-serif; font-weight:500; letter-spacing:0.05em;
-    font-size:0.7rem; color:var(--ink-soft); text-transform:uppercase;
-  }
-  .team-body h3{font-size:1.28rem; line-height:1.1;}
-  .team-body p.blurb{margin:0; font-size:0.88rem; color:var(--ink-soft);}
-  .team-body p.note{
-    font-size:0.74rem; font-style:italic; color:var(--ink-soft);
-    margin:auto 0 0; padding-top:0.6rem; border-top:1px solid var(--hair);
-  }
+  /* ---------------- screens ---------------- */
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:14px;overflow-y:auto;text-align:center;
+      padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));
+      background:
+        repeating-linear-gradient(to bottom,rgba(0,0,0,.26) 0 1px,transparent 1px 3px),
+        radial-gradient(ellipse at 50% 24%,var(--plum-lift) 0%,var(--plum) 48%,var(--plum-deep) 100%)}
+  .screen.hidden{display:none}
 
-  /* ---------- secondary concept grid ---------- */
-  .sub-head{margin-bottom:1.2rem;}
-  .sub-head h3{font-size:1.15rem; color:var(--ink-soft); font-weight:500;}
-  .concept-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
-    gap:clamp(1rem, 2.5vw, 1.4rem);
-  }
-  .concept-card{
-    background:rgba(42,20,64,0.5);
-    border:1px dashed var(--panel-line);
-    padding:1.3rem 1.2rem 1.5rem;
-    display:flex; flex-direction:column; gap:0.65rem;
-  }
-  .concept-card .icon{width:50px; height:auto; opacity:0.9;}
-  .concept-card h4{
-    font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:0.03em;
-    font-size:1.05rem; margin:0; color:var(--ink);
-  }
-  .concept-card p{margin:0; font-size:0.88rem; color:var(--ink-soft);}
+  .wordmark{display:flex;align-items:center;gap:12px;justify-content:center}
+  .wordmark .horse{width:44px;height:44px;border-radius:50%;
+      border:4px solid var(--gold);border-bottom-color:transparent;transform:rotate(45deg)}
+  h1{margin:0;font-size:min(11vw,58px);letter-spacing:9px;line-height:1;color:var(--cream);
+      text-shadow:0 0 30px rgba(255,210,30,.35), 0 4px 0 rgba(0,0,0,.55)}
+  .sub{color:rgba(246,239,226,.66);font-size:12px;letter-spacing:5px;margin:-2px 0 2px}
+  .coin{color:var(--gold);font-size:14px;letter-spacing:6px;animation:blink 1.4s steps(2) infinite}
+  @keyframes blink{50%{opacity:.15}}
+  @media (prefers-reduced-motion:reduce){.coin{animation:none}}
+  .rule{width:min(560px,86%);height:2px;
+      background:linear-gradient(90deg,transparent,rgba(255,210,30,.7),transparent)}
 
-  /* ---------- about ---------- */
-  .about .wrap{
-    display:grid; grid-template-columns:1.15fr 0.85fr; gap:clamp(2rem,5vw,4rem);
-    align-items:start;
-  }
-  @media (max-width:820px){ .about .wrap{grid-template-columns:1fr;} }
-  .about p.lede{
-    font-style:italic; font-size:clamp(1.15rem,2.4vw,1.4rem); line-height:1.4;
-    color:var(--gold-bright); margin:0.4rem 0 1.1rem; max-width:30ch;
-  }
-  .about p.body-copy{font-size:1.05rem; color:var(--ink-soft); max-width:58ch; margin:0 0 1.3rem;}
-  .pull{
-    border-left:3px solid var(--gold);
-    padding-left:1.1rem;
-    font-family:'Oswald', sans-serif;
-    text-transform:uppercase;
-    font-size:1.02rem;
-    letter-spacing:0.02em;
-    color:var(--ink);
-    max-width:36ch;
-  }
-  .about-photo{
-    position:relative;
-    border:1px solid var(--panel-line);
-    margin-bottom:1.5rem;
-    overflow:hidden;
-  }
-  .about-photo::before, .about-photo::after{content:""; position:absolute; width:16px; height:16px; pointer-events:none;}
-  .about-photo::before{top:-1px; left:-1px; border-top:2px solid var(--gold); border-left:2px solid var(--gold);}
-  .about-photo::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--gold); border-right:2px solid var(--gold);}
-  .about-photo img{width:100%; height:auto; display:block;}
-  .about-photo figcaption{
-    padding:0.6rem 0.9rem; font-family:'Oswald',sans-serif; font-size:0.68rem;
-    letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);
-    border-top:1px solid var(--hair);
-  }
-  .facts{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:0.85rem;}
-  .facts li{
-    display:flex; justify-content:space-between; gap:1rem;
-    padding-bottom:0.85rem;
-    border-bottom:1px solid var(--hair);
-    font-size:0.92rem;
-  }
-  .facts li span:first-child{color:var(--ink-soft);}
-  .facts li span:last-child{font-weight:600; text-align:right; color:var(--ink);}
+  .pick-label{font-size:15px;letter-spacing:2px;margin-top:2px}
+  .pick-label em{color:var(--gold);font-style:normal}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;
+      width:100%;max-width:560px}
+  .tcard{position:relative;cursor:pointer;border:2px solid rgba(246,239,226,.18);
+      border-radius:7px;overflow:hidden;background:rgba(0,0,0,.28);color:var(--cream);
+      padding:10px 7px 9px;font-size:14px;letter-spacing:.6px;text-align:center;
+      transition:transform .1s, border-color .1s}
+  .tcard:hover{transform:translateY(-2px);border-color:var(--gold)}
+  .tcard.sel{border-color:var(--gold);box-shadow:0 0 0 2px rgba(255,210,30,.35)}
+  .tcard .bar{height:8px;margin:-10px -7px 8px;display:flex}
+  .tcard .bar i{flex:1}
+  .tcard .city{display:block;font-size:10px;color:rgba(246,239,226,.55);letter-spacing:1px;margin-top:2px}
 
-  .how{margin-top:clamp(2.2rem,4vw,3rem);}
-  .how .eyebrow{display:block; margin-bottom:0.9rem;}
-  .how-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:1.4rem;}
-  .how-item{border-top:2px solid var(--gold); padding-top:0.8rem;}
-  .how-item h4{
-    font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:0.95rem;
-    letter-spacing:0.04em; margin:0 0 0.4rem; color:var(--ink);
-  }
-  .how-item p{margin:0; font-size:0.88rem; color:var(--ink-soft);}
+  .btn{pointer-events:auto;cursor:pointer;border:0;border-radius:8px;
+      background:linear-gradient(var(--gold),#e0a800);color:#2a1400;
+      font-family:inherit;font-weight:700;font-size:18px;letter-spacing:3px;
+      padding:12px 32px;box-shadow:0 4px 0 #8a6600}
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #8a6600}
+  .btn.ghost{background:transparent;color:rgba(246,239,226,.8);box-shadow:none;
+      border:2px solid rgba(246,239,226,.32);font-size:13px;padding:8px 18px}
+  .modes{display:flex;gap:8px}
+  .mode{cursor:pointer;border:2px solid rgba(246,239,226,.3);background:transparent;
+      color:rgba(246,239,226,.8);font-family:inherit;font-weight:700;font-size:14px;
+      letter-spacing:2px;padding:8px 22px;border-radius:7px}
+  .mode.on{border-color:var(--gold);color:var(--gold);background:rgba(255,210,30,.12)}
+  .keys{color:rgba(246,239,226,.55);font-size:12px;line-height:1.8;letter-spacing:1px;max-width:460px}
+  .keys b{color:var(--cream);background:rgba(255,255,255,.1);border-radius:4px;padding:1px 6px}
 
-  /* ---------- contact ---------- */
-  .contact{background:var(--panel); border-top:1px solid var(--panel-line); border-bottom:1px solid var(--panel-line);}
-  .contact .wrap{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1.5rem;}
-  .contact-copy h2{font-size:clamp(1.5rem,3.2vw,2rem); margin-bottom:0.5rem;}
-  .contact-copy p{margin:0 0 0.7rem; color:var(--ink-soft); max-width:44ch;}
-  .contact-copy a.handle{
-    font-family:'Oswald',sans-serif; font-weight:600; letter-spacing:0.06em;
-    color:var(--gold-bright); text-decoration:none; font-size:0.95rem;
-  }
-  .contact-copy a.handle:hover{text-decoration:underline;}
-  .stamp{
-    font-family:'Oswald', sans-serif;
-    border:2px solid var(--gold);
-    color:var(--gold-bright);
-    padding:0.7rem 1.3rem;
-    letter-spacing:0.1em;
-    text-transform:uppercase;
-    font-size:0.8rem;
-    white-space:nowrap;
-    transform:rotate(-2deg);
-  }
+  #cupRound{color:var(--gold);font-size:17px;letter-spacing:5px}
+  .bracket{display:flex;gap:10px;align-items:center;justify-content:center;width:100%;
+      max-width:640px;overflow-x:auto;padding:4px}
+  .bcol{display:flex;flex-direction:column;gap:8px;justify-content:space-around;flex:1;min-width:104px}
+  .bcol h4{margin:0 0 2px;color:rgba(246,239,226,.45);font-size:10px;letter-spacing:2px;font-weight:700}
+  .tie{border:1px solid rgba(246,239,226,.16);border-radius:5px;overflow:hidden;background:rgba(0,0,0,.3)}
+  .tie div{display:flex;justify-content:space-between;gap:6px;padding:4px 7px;
+      color:rgba(246,239,226,.85);font-size:13px}
+  .tie div+div{border-top:1px solid rgba(246,239,226,.1)}
+  .tie .you{color:var(--gold)} .tie .won{color:#fff} .tie .lost{opacity:.42}
+  .tie b{font-variant-numeric:tabular-nums}
+  #cupNext{font-size:16px;letter-spacing:2px}
+  #cupNext em{color:var(--gold);font-style:normal}
+  #ftScore{font-size:min(16vw,80px);letter-spacing:8px;line-height:1;color:#fff}
+  #ftLine{color:var(--gold);font-size:18px;letter-spacing:4px}
 
-  footer{padding-block:1.8rem;}
-  footer .wrap{
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.6rem;
-    font-size:0.72rem; letter-spacing:0.05em; text-transform:uppercase; color:var(--ink-soft);
-  }
-  footer a{color:var(--gold-bright); text-decoration:none;}
+  /* ---------------- reward + leaderboard ---------------- */
+  #reward{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:12px;overflow-y:auto;text-align:center;
+      padding:24px 16px calc(24px + env(safe-area-inset-bottom,0px));
+      background:radial-gradient(ellipse at 50% 30%,rgba(67,32,107,.98),rgba(24,10,43,.99))}
+  #reward.hidden{display:none}
+  #rwTitle{color:var(--gold);font-size:min(9vw,44px);letter-spacing:6px;margin:0}
+  #rwTeam{font-size:20px;letter-spacing:4px;color:var(--cream)}
+  #rwBlurb{margin:0;max-width:420px;font-size:15px;line-height:1.55;
+      color:rgba(246,239,226,.8)}
+  .pts{font-size:13px;letter-spacing:2px;color:rgba(246,239,226,.65)}
+  .pts b{color:var(--gold);font-size:22px;display:block;font-variant-numeric:tabular-nums}
 
-  /* ---------- view routing ---------- */
-  .view{display:none;}
-  .view.is-active{display:block;}
+  #scoreForm{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+      width:100%;max-width:440px;pointer-events:auto}
+  #scoreForm input{flex:1 1 150px;min-width:0;background:rgba(0,0,0,.35);
+      border:2px solid rgba(246,239,226,.28);border-radius:7px;color:var(--cream);
+      font-family:inherit;font-size:15px;padding:10px 12px}
+  #scoreForm input:focus{outline:none;border-color:var(--gold)}
+  #scoreForm button{flex:0 0 auto}
+  #scDone{font-size:13px;color:#7fe08a;letter-spacing:1px;min-height:1.2em}
 
+  #board{width:100%;max-width:440px;display:flex;flex-direction:column;gap:3px}
+  #board .row{display:grid;grid-template-columns:28px 1fr auto 56px;gap:8px;align-items:center;
+      background:rgba(0,0,0,.28);border-radius:5px;padding:6px 10px;font-size:14px}
+  #board .row b{color:var(--gold);font-variant-numeric:tabular-nums}
+  #board .row em{font-style:normal;color:rgba(246,239,226,.6);font-size:12px;letter-spacing:1px}
+  #board .row i{font-style:normal;text-align:right;font-variant-numeric:tabular-nums;color:var(--cream)}
+  #board .empty{color:rgba(246,239,226,.5);font-size:13px;margin:4px 0}
+  .boardTitle{font-size:12px;letter-spacing:4px;color:rgba(246,239,226,.5);margin-top:6px}
 
-  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
+  .shopLink{pointer-events:auto;display:inline-block;text-decoration:none;
+      background:linear-gradient(var(--gold),#e0a800);color:#2a1400;font-weight:700;
+      font-size:17px;letter-spacing:2px;padding:13px 30px;border-radius:8px;
+      box-shadow:0 4px 0 #8a6600}
+  .backShop{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:14px;
+      z-index:30;pointer-events:auto;text-decoration:none;color:rgba(246,239,226,.72);
+      font-size:12px;letter-spacing:2px;border:1px solid rgba(246,239,226,.28);
+      border-radius:6px;padding:6px 12px;background:rgba(24,10,43,.55)}
 
-  .team-card{text-decoration:none; color:inherit; cursor:pointer; transition:border-color .2s;}
-  .team-card:hover{border-color:var(--gold);}
-
-  /* ---------- shop page ---------- */
-  .shop-page .shop-sub{color:var(--ink-soft); max-width:52ch; margin:-1rem 0 2rem;}
-  .shop-all-link{
-    display:inline-block; margin:0 0 clamp(2.2rem,4vw,3.2rem);
-    font-family:'Oswald',sans-serif; font-weight:600; font-size:0.78rem;
-    letter-spacing:0.08em; text-transform:uppercase; text-decoration:none;
-    color:var(--gold-bright); border-bottom:1px solid var(--gold); padding-bottom:2px;
-  }
-  .shop-all-link:hover{color:var(--ink);}
-  .shop-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:clamp(1.1rem, 2.5vw, 1.6rem);}
-  .shop-card{position:relative; background:var(--panel); border:1px solid var(--panel-line); display:flex; flex-direction:column;}
-  .shop-card::before, .shop-card::after{content:""; position:absolute; width:16px; height:16px; pointer-events:none;}
-  .shop-card::before{top:-1px; left:-1px; border-top:2px solid var(--gold); border-left:2px solid var(--gold);}
-  .shop-card::after{bottom:-1px; right:-1px; border-bottom:2px solid var(--gold); border-right:2px solid var(--gold);}
-  .shop-card-media{display:flex; aspect-ratio:1/1; background:var(--ground-deep); overflow:hidden; align-items:center; justify-content:center;}
-  .shop-card-media img{width:100%; height:100%; object-fit:cover;}
-  .shop-card-media svg{width:58%; height:auto;}
-  .shop-card-body{padding:1.05rem 1.15rem 1.3rem; display:flex; flex-direction:column; gap:0.55rem; flex:1;}
-  .shop-card-name{text-decoration:none; color:inherit;}
-  .shop-card-name h3{font-size:1.05rem; line-height:1.15;}
-  .shop-card-name:hover h3{color:var(--gold-bright);}
-  .shop-card-price{font-family:'Oswald',sans-serif; font-weight:600; font-size:0.92rem; color:var(--gold-bright); letter-spacing:0.02em;}
-  .shop-card-form{display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:auto; padding-top:0.5rem;}
-  .shop-card-form select{
-    flex:1; min-width:64px; background:var(--ground-deep); color:var(--ink);
-    border:1px solid var(--panel-line); border-radius:2px;
-    font-family:'Oswald',sans-serif; font-size:0.72rem; letter-spacing:0.04em; padding:0.45rem 0.4rem;
-  }
-  .shop-card-add{
-    flex-basis:100%; font-family:'Oswald',sans-serif; font-weight:600; font-size:0.74rem;
-    letter-spacing:0.08em; text-transform:uppercase; color:var(--ground-deep);
-    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
-    border:none; border-radius:2px; cursor:pointer; padding:0.6rem 0.8rem;
-  }
-  .shop-card-add:hover{filter:brightness(1.08);}
-
-  /* ---------- product detail ---------- */
-  .back-link{
-    display:inline-block; margin-bottom:1.6rem;
-    font-family:'Oswald',sans-serif; font-weight:500; font-size:0.76rem;
-    letter-spacing:0.08em; text-transform:uppercase; text-decoration:none; color:var(--ink-soft);
-  }
-  .back-link:hover{color:var(--gold-bright);}
-  .product-layout{display:grid; grid-template-columns:1fr 1fr; gap:clamp(2rem,5vw,3.6rem); align-items:start; padding-bottom:clamp(2rem,4vw,3rem);}
-  @media (max-width:820px){ .product-layout{grid-template-columns:1fr;} }
-  .product-media{position:relative; background:var(--panel); border:1px solid var(--panel-line); aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; overflow:hidden;}
-  .product-media img{width:100%; height:100%; object-fit:cover;}
-  .product-media svg{width:56%; height:auto;}
-  .pmedia-carousel{position:relative; width:100%; height:100%;}
-  .pmedia-track{display:flex; width:100%; height:100%; transition:transform .35s ease;}
-  .pmedia-track .pmedia-slide{flex:0 0 100%; width:100%; height:100%; object-fit:cover; display:block;}
-  .pmedia-nav{position:absolute; top:50%; transform:translateY(-50%); width:30px; height:30px; border-radius:50%; border:none; background:rgba(15,7,24,.6); color:var(--ink,#F3ECDD); font-size:18px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2; padding:0;}
-  .pmedia-nav:hover{background:rgba(15,7,24,.85);}
-  .pmedia-nav.prev{left:8px;}
-  .pmedia-nav.next{right:8px;}
-  .pmedia-dots{position:absolute; bottom:10px; left:50%; transform:translateX(-50%); display:flex; gap:6px; z-index:2;}
-  .pmedia-dot{width:6px; height:6px; border-radius:50%; background:rgba(243,236,221,.45); cursor:pointer; border:none; padding:0;}
-  .pmedia-dot.active{background:var(--gold-bright, var(--gold)); width:16px; border-radius:3px;}
-  .product-info .sub{font-family:'Oswald',sans-serif; font-weight:500; letter-spacing:0.05em; font-size:0.72rem; color:var(--ink-soft); text-transform:uppercase;}
-  .product-info h1{font-size:clamp(1.6rem,3.4vw,2.2rem); margin:0.35rem 0 0.7rem;}
-  .product-price{display:block; font-family:'Oswald',sans-serif; font-weight:600; font-size:1.3rem; color:var(--gold-bright); margin-bottom:0.9rem;}
-  .product-blurb{color:var(--ink-soft); font-size:1rem; margin:0 0 0.5rem; max-width:48ch;}
-  .product-info .note{font-size:0.78rem; font-style:italic; color:var(--ink-soft); margin:0 0 1.4rem;}
-  .option-group{margin-bottom:1.2rem;}
-  .option-label{display:block; font-family:'Oswald',sans-serif; font-weight:600; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:0.55rem;}
-  .shipping-note{font-size:0.8rem; color:var(--ink-soft);}
-
-  /* ---------- survey widget ---------- */
-  .survey{display:flex; flex-direction:column; gap:0.55rem; margin-top:auto; padding-top:0.5rem;}
-  .product-info .survey{margin-top:0; padding-top:0; margin-bottom:1.1rem;}
-  .survey-btns{display:flex; flex-wrap:wrap; gap:0.5rem;}
-  .survey-btn{
-    flex:1 1 130px; font-family:'Oswald',sans-serif; font-weight:600;
-    font-size:0.74rem; letter-spacing:0.06em; text-transform:uppercase;
-    border-radius:2px; cursor:pointer; padding:0.6rem 0.7rem;
-    border:1px solid var(--panel-line); background:transparent; color:var(--ink-soft);
-  }
-  .survey-btn.is-yes{
-    color:var(--ground-deep); border:none;
-    background:linear-gradient(180deg, var(--gold-bright), var(--gold));
-  }
-  .survey-btn.is-yes:hover{filter:brightness(1.08);}
-  .survey-btn.is-no:hover{color:var(--ink); border-color:var(--gold);}
-  .survey-btns.survey-email input{
-    flex:1 1 140px; font-family:'Alegreya',serif; font-size:0.9rem;
-    background:var(--ground-deep); color:var(--ink);
-    border:1px solid var(--panel-line); border-radius:2px; padding:0.55rem 0.65rem;
-  }
-  .survey-btns.survey-email input:focus-visible{outline:2px solid var(--gold-bright); outline-offset:1px;}
-  .survey-submit{
-    flex:1 1 130px; font-family:'Oswald',sans-serif; font-weight:600;
-    font-size:0.74rem; letter-spacing:0.06em; text-transform:uppercase;
-    color:var(--ground-deep); background:linear-gradient(180deg, var(--gold-bright), var(--gold));
-    border:none; border-radius:2px; cursor:pointer; padding:0.6rem 0.7rem;
-  }
-  .survey-submit:hover{filter:brightness(1.08);}
-  .survey-thanks{
-    font-family:'Oswald',sans-serif; font-weight:600; font-size:0.76rem;
-    letter-spacing:0.04em; text-transform:uppercase; color:var(--gold-bright);
-    margin-top:auto; padding-top:0.6rem;
-  }
-  .product-info .survey-thanks{margin-top:0; padding-top:0; margin-bottom:1.1rem; font-size:0.85rem;}
-
-  /* ---------- toast ---------- */
-  .toast{
-    position:fixed; left:50%; bottom:1.6rem; transform:translate(-50%, 12px);
-    background:var(--gold-bright); color:var(--ground-deep);
-    font-family:'Oswald',sans-serif; font-weight:600; font-size:0.8rem; letter-spacing:0.04em;
-    padding:0.7rem 1.2rem; border-radius:2px; box-shadow:0 10px 24px -8px rgba(0,0,0,0.5);
-    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:50;
-  }
-  .toast.is-visible{opacity:1; transform:translate(-50%, 0);}
+  /* ---------------- touch ---------------- */
+  #touch{position:absolute;inset:0;display:none;pointer-events:none}
+  #touch.on{display:block}
+  #stick{position:absolute;left:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));
+      width:118px;height:118px;border-radius:50%;background:rgba(255,255,255,.08);
+      border:2px solid rgba(255,255,255,.2);pointer-events:auto}
+  #knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;
+      border-radius:50%;background:rgba(255,255,255,.35)}
+  .tbtn{position:absolute;width:64px;height:64px;border-radius:50%;pointer-events:auto;
+      background:rgba(255,210,30,.22);border:2px solid rgba(255,210,30,.6);
+      color:#fff;font-size:12px;letter-spacing:1px;display:flex;align-items:center;justify-content:center}
+  #bShoot{right:20px;bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  #bPass{right:92px;bottom:calc(30px + env(safe-area-inset-bottom,0px))}
+  #bLob{right:20px;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:52px;height:52px}
 </style>
 
-<div id="static-chrome">
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
-      <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 0"/>
-    </filter>
-    <symbol id="petaloMark" viewBox="0 0 120 150">
-      <rect x="44" y="40" width="14" height="102" rx="2" fill="var(--gold)"/>
-      <path d="M58,40 H86 A26,26 0 0 1 86,92 H58" fill="none" stroke="var(--gold)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M62,48 H80 A18,18 0 0 1 80,84 H62" fill="none" stroke="var(--gold)" stroke-width="3.5" opacity="0.85"/>
-      <path d="M66,56 H74 A10,10 0 0 1 74,76 H66" fill="none" stroke="var(--gold)" stroke-width="3" opacity="0.7"/>
-    </symbol>
-    <symbol id="teeIcon" viewBox="0 0 200 220">
-      <path d="M60,10 L80,0 Q100,15 120,0 L140,10 L172,42 L148,68 L134,56 L134,204 L66,204 L66,56 L52,68 L28,42 Z"
-            fill="none" stroke="var(--gold)" stroke-width="4" stroke-linejoin="round"/>
-    </symbol>
-    <clipPath id="shieldClip" clipPathUnits="userSpaceOnUse">
-      <path d="M50,4 L94,18 L94,52 Q94,96 50,116 Q6,96 6,52 L6,18 Z"/>
-    </clipPath>
-  </defs>
-</svg>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <a class="backShop" id="backShop" href="https://petalo24.gr">← PETALO SHOP</a>
 
-<svg class="grain-overlay" aria-hidden="true"><rect width="100%" height="100%" filter="url(#grain)"/></svg>
-
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-</div>
-
-<template id="shell-template">
-<header class="site-header">
-  <div class="wrap">
-    <a class="brand" href="#top">
-      <img src="/images/logo.png" alt="Petalo">
-      <span>PETALO</span>
-    </a>
-    <div class="header-right">
-      <nav class="main-nav">
-        <a href="#/shop" data-i18n="nav_shop">Shop</a>
-        <a href="#drop" data-i18n="nav_drop">Drop 01</a>
-        <a href="#drop3" data-i18n="nav_drop3">Drop 02</a>
-        <a href="#drop2" data-i18n="nav_drop2">Drop 03</a>
-        <a href="#about" data-i18n="nav_about">The Story</a>
-        <a href="#contact" data-i18n="nav_contact">Contact</a>
-        <a class="ig" href="https://www.instagram.com/petalogr/" target="_blank" rel="noopener" data-i18n="nav_ig">Instagram ↗</a>
-      </nav>
-      <div class="lang-toggle" role="group" aria-label="Language">
-        <button type="button" data-lang-btn="en" aria-pressed="true">EN</button>
-        <button type="button" data-lang-btn="el" aria-pressed="false">ΕΛ</button>
-      </div>
+  <div id="hud">
+    <div class="scorebar">
+      <div class="panel sb-team"><span class="crest" id="swA"></span><span class="sb-ab" id="abA">ΠΑΟ</span></div>
+      <div class="panel led sb-score" id="scoreA">0</div>
+      <div class="panel led sb-clock" id="clock">2:30</div>
+      <div class="panel led sb-score" id="scoreB">0</div>
+      <div class="panel sb-team"><span class="sb-ab" id="abB">ΠΑΟΚ</span><span class="crest" id="swB"></span></div>
     </div>
+    <div id="caption"></div>
+    <div id="power"><i id="powerFill"></i></div>
+    <canvas id="radar" width="336" height="212"></canvas>
+    <div class="formation" id="formL">ΕΣΥ<b>4-4-2</b></div>
+    <div class="formation" id="formR">COM<b>4-4-2</b></div>
+    <div id="fps"></div>
+    <div id="hint"></div>
   </div>
-</header>
 
-<main id="top">
-<div id="view-home" class="view is-active">
-  <section class="hero">
-    <div class="wrap">
-      <div>
-        <p class="eyebrow" data-i18n="eyebrow_hero">Greek Fan Culture</p>
-        <h1 data-i18n="hero_h1" data-i18n-html="1">Born In<br>The Stands.</h1>
-        <p class="hero-tagline" data-i18n="hero_tagline">"For those who live the game from the stands."</p>
-        <p class="hero-sub" data-i18n="hero_sub">Original T-shirts inspired by Greek sports culture, the stands, and everything that happens on matchday.</p>
-        <a class="cta" href="#drop" data-i18n="cta">See Drop 01</a>
-      </div>
-      <div class="hero-art" aria-hidden="true">
-        <img src="/images/hero-art.png" alt="">
-      </div>
-    </div>
-  </section>
-
-  <section id="drop">
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow" data-i18n="drop_eyebrow">Collection 001 — From The Stands</p>
-          <h2 data-i18n="drop_title">Drop 01</h2>
-        </div>
-        <span class="count" id="dropCount"></span>
-      </div>
-
-      <div class="team-grid" id="teamGrid"></div>
-
-      <a class="shop-all-link" href="#/shop" data-i18n="shop_all_cta">Shop the Full Collection →</a>
-
-      <div class="sub-head">
-        <h3 data-i18n="concepts_heading">Also in the works</h3>
-      </div>
-      <div class="concept-grid">
-        <article class="concept-card">
-          <svg class="icon" viewBox="0 0 200 220"><use href="#teeIcon"/></svg>
-          <span class="pill design" data-i18n="pill_design">In Design</span>
-          <h4 data-i18n="concept1_name">Petalo Original Tee</h4>
-          <p data-i18n="concept1_blurb">Small Petalo symbol on the front, a larger design on the back. For fans of every team.</p>
-        </article>
-        <article class="concept-card">
-          <svg class="icon" viewBox="0 0 200 220"><use href="#teeIcon"/></svg>
-          <span class="pill design" data-i18n="pill_design">In Design</span>
-          <h4 data-i18n="concept2_name">Matchday Ritual Tee</h4>
-          <p data-i18n="concept2_blurb">The fan experience, in a design — "since I was a kid in the stands."</p>
-        </article>
-        <article class="concept-card">
-          <svg class="icon" viewBox="0 0 200 220"><use href="#teeIcon"/></svg>
-          <span class="pill design" data-i18n="pill_design">In Design</span>
-          <h4 data-i18n="concept3_name">Stands Culture Tee</h4>
-          <p data-i18n="concept3_blurb">Greek sports culture in an original design, without copying any specific team.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section id="drop3">
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow" data-i18n="drop3_eyebrow">Collection 002 — Insert Coin</p>
-          <h2 data-i18n="drop3_title">Drop 02</h2>
-        </div>
-        <span class="count" id="dropCount3"></span>
-      </div>
-
-      <div class="team-grid" id="drop3Grid"></div>
-
-      <a class="shop-all-link" href="#/shop" data-i18n="shop_all_cta">Shop the Full Collection →</a>
-    </div>
-  </section>
-
-  <section id="drop2">
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow" data-i18n="drop2_eyebrow">Collection 003 — From The Court</p>
-          <h2 data-i18n="drop2_title">Drop 03</h2>
-        </div>
-        <span class="count" id="dropCount2"></span>
-      </div>
-
-      <div class="team-grid" id="bballGrid"></div>
-
-      <a class="shop-all-link" href="#/shop" data-i18n="shop_all_cta">Shop the Full Collection →</a>
-    </div>
-  </section>
-
-  <section class="about" id="about">
-    <div class="wrap">
-      <div>
-        <p class="eyebrow" data-i18n="about_eyebrow">The Story</p>
-        <p class="lede" data-i18n="about_lede">For those who live the game from the stands.</p>
-        <p class="body-copy" data-i18n="about_body">Petalo was created for those who don't just watch a match, but live everything around it. We design original apparel inspired by fan culture, without trying to replace the official team kits. Small drops, authentic designs, and stories that make sense to anyone who's stood in the stands.</p>
-        <p class="pull" data-i18n="about_pull">The stands aren't background noise. They're the reason the game sounds different.</p>
-
-        <div class="how">
-          <span class="eyebrow" data-i18n="how_eyebrow">How the first drop will work</span>
-          <div class="how-grid">
-            <div class="how-item">
-              <h4 data-i18n="how1_title">Made to Order</h4>
-              <p data-i18n="how1_body">Each piece is printed once your order is placed — no stock held.</p>
-            </div>
-            <div class="how-item">
-              <h4 data-i18n="how2_title">Original Designs</h4>
-              <p data-i18n="how2_body">Inspired by sports and fan culture, never official merchandise.</p>
-            </div>
-            <div class="how-item">
-              <h4 data-i18n="how3_title">Tracked Shipping</h4>
-              <p data-i18n="how3_body">You'll get a tracking update the moment your order ships.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <figure class="about-photo">
-        <img src="/images/about-photo.jpg" alt="Petalo — retro jerseys on a rack, Petalo poster art">
-        <figcaption data-i18n="about_photo_caption">From the Petalo archive</figcaption>
-      </figure>
-      <ul class="facts">
-        <li><span data-i18n="facts_name_label">Name</span><span data-i18n="facts_name_value">Petalo — from "pétalo"</span></li>
-        <li><span data-i18n="facts_logo_label">Logo inspiration</span><span data-i18n="facts_logo_value">Panathenaic Stadium</span></li>
-        <li><span data-i18n="facts_ig_label">Instagram</span><span>@petalogr</span></li>
-        <li><span data-i18n="facts_designs_label">Designs</span><span data-i18n="facts_designs_value">100% original</span></li>
-        <li><span data-i18n="facts_drop_label">First Drop</span><span data-i18n="facts_drop_value">Coming soon</span></li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="contact" id="contact">
-    <div class="wrap">
-      <div class="contact-copy">
-        <h2 data-i18n="contact_title">Be First in the Stands</h2>
-        <p data-i18n="contact_body">New drops, new stories, and limited releases from Petalo.</p>
-        <a class="handle" href="https://www.instagram.com/petalogr/" target="_blank" rel="noopener">Instagram — @petalogr ↗</a>
-      </div>
-      <div class="stamp" data-i18n="stamp">First Drop Coming Soon</div>
-    </div>
-  </section>
-</div>
-
-<div id="view-shop" class="view">
-  <section class="shop-page">
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <p class="eyebrow" data-i18n="shop_eyebrow">Full Collection</p>
-          <h2 data-i18n="shop_title">Shop</h2>
-        </div>
-        <span class="count" id="shopCount"></span>
-      </div>
-      <p class="shop-sub" data-i18n="shop_sub">Made-to-order tees for Greek fan culture. Pick a design, size and color.</p>
-      <div class="shop-grid" id="shopGrid"></div>
-    </div>
-  </section>
-</div>
-
-<div id="view-product" class="view">
-  <section class="product-page">
-    <div class="wrap">
-      <a class="back-link" href="#/shop" data-i18n="back_to_shop">← Back to Shop</a>
-      <div class="product-layout" id="productLayout"></div>
-    </div>
-  </section>
-</div>
-
-</main>
-
-<footer>
-  <div class="wrap">
-    <span data-i18n="footer_copyright">© Petalo</span>
-    <span data-i18n="footer_tagline">For those who live the game from the stands.</span>
-    <span><a href="https://www.instagram.com/petalogr/" target="_blank" rel="noopener">@petalogr</a></span>
+  <div id="touch">
+    <div id="stick"><div id="knob"></div></div>
+    <div class="tbtn" id="bShoot">ΣΟΥΤ</div>
+    <div class="tbtn" id="bPass">ΠΑΣΑ</div>
+    <div class="tbtn" id="bLob">ΨΗΛΑ</div>
   </div>
-</footer>
-</template>
-<div id="app-root"></div>
 
-<script id="app-script">
-(function(){
-  document.getElementById('app-root').appendChild(document.getElementById('shell-template').content.cloneNode(true));
-  var PAO_IMG = "/images/pao-img.jpg";
-  var OLY_IMG = "/images/oly-img.jpg";
-  var AEK_IMG = "/images/aek-img.jpg";
-  var PAOK_IMG = "/images/paok-img.jpg";
-  var ARIS_IMG = "/images/aris-img.jpg";
-  var IRAKLIS_IMG = "/images/iraklis-img.jpg";
+  <div class="screen" id="menu">
+    <div class="wordmark"><span class="horse"></span><h1>PETALO</h1></div>
+    <div class="sub">ΑΡΚΕΪΝΤ ΠΟΔΟΣΦΑΙΡΟ</div>
+    <div class="coin">INSERT COIN</div>
+    <div class="rule"></div>
+    <div class="modes">
+      <button class="mode on" id="modeCup">ΚΥΠΕΛΛΟ</button>
+      <button class="mode" id="modeFriendly">ΦΙΛΙΚΟΣ</button>
+    </div>
+    <div class="pick-label" id="pickLabel">ΔΙΑΛΕΞΕ ΤΗΝ <em>ΟΜΑΔΑ ΣΟΥ</em></div>
+    <div class="grid" id="teamGrid"></div>
+    <button class="btn" id="startBtn" style="display:none">ΞΕΚΙΝΑ</button>
+    <button class="btn ghost" id="gfxBtn">ΓΡΑΦΙΚΑ: ARCADE 384p</button>
+    <div class="keys">
+      <b>← ↑ ↓ →</b> / <b>WASD</b> κίνηση<br>
+      <b>J</b> κοντινή πάσα &nbsp;·&nbsp; <b>L</b> μακρινή πάσα &nbsp;·&nbsp; <b>K</b> σουτ (κράτα το πατημένο)<br>
+      Στην άμυνα: <b>J</b> τάκλιν. Η αλλαγή παίκτη γίνεται αυτόματα.
+    </div>
+    <div class="boardTitle">ΚΟΡΥΦΑΙΑ ΣΚΟΡ</div>
+    <div id="board"></div>
+  </div>
 
-  var PAO_MD_SHIRT = "/images/pao-md-shirt.jpg";
-  var OLY_MD_SHIRT = "/images/oly-md-shirt.jpg";
-  var AEK_MD_SHIRT = "/images/aek-md-shirt.jpg";
-  var PAOK_MD_SHIRT = "/images/paok-md-shirt.jpg";
-  var ARIS_MD_SHIRT = "/images/aris-md-shirt.jpg";
-  var IRAKLIS_MD_SHIRT = "/images/iraklis-md-shirt.jpg";
-  var PAO_MD_ART = "/images/pao-md-art.jpg";
-  var OLY_MD_ART = "/images/oly-md-art.jpg";
-  var AEK_MD_ART = "/images/aek-md-art.jpg";
-  var PAOK_MD_ART = "/images/paok-md-art.jpg";
-  var ARIS_MD_ART = "/images/aris-md-art.jpg";
-  var IRAKLIS_MD_ART = "/images/iraklis-md-art.jpg";
-  var PAOK_BB_SHIRT = "/images/paok-bb-shirt.jpg";
-  var AEK_BB_ART = "/images/aek-bb-art.jpg";
-  var AEK_BB_SHIRT = "/images/aek-bb-shirt.jpg";
-  var ARIS_BB_ART = "/images/aris-bb-art.jpg";
-  var ARIS_BB_SHIRT = "/images/aris-bb-shirt.jpg";
-  var IRAKLIS_BB_ART = "/images/iraklis-bb-art.jpg";
-  var IRAKLIS_BB_SHIRT = "/images/iraklis-bb-shirt.jpg";
-  var OLY_BB_ART = "/images/oly-bb-art.jpg";
-  var OLY_BB_SHIRT = "/images/oly-bb-shirt.jpg";
-  var PAO_BB_ART = "/images/pao-bb-art.jpg";
-  var PAO_BB_SHIRT = "/images/pao-bb-shirt.jpg";
-  var PAOK_BB_ART = "/images/paok-bb-art.jpg";
+  <div class="screen hidden" id="cup">
+    <h1 style="font-size:min(8vw,40px)">ΚΥΠΕΛΛΟ</h1>
+    <div id="cupRound">ΠΡΟΗΜΙΤΕΛΙΚΑ</div>
+    <div class="bracket" id="bracket"></div>
+    <div id="cupNext"></div>
+    <button class="btn" id="cupGo">ΣΕΝΤΡΑ!</button>
+    <button class="btn ghost" id="cupQuit">ΕΞΟΔΟΣ</button>
+  </div>
 
-  var teams = [
-    {
-      id:'pao', ready:true, code:'ΠΑΟ', img:PAO_IMG,
-      nameEN:'Panathinaikos', nameGR:'Παναθηναϊκός',
-      blurbEN:'Green and white, straight from the Leoforos stands.',
-      blurbGR:'Πράσινο και άσπρο, κατευθείαν από τις κερκίδες της Λεωφόρου.'
-    },
-    {
-      id:'oly', ready:false, code:'ΟΣΦΠ', img:OLY_IMG,
-      nameEN:'Olympiacos', nameGR:'Ολυμπιακός',
-      blurbEN:'Red and white, straight from the Karaiskakis stands.',
-      blurbGR:'Κόκκινο-άσπρο, κατευθείαν από τις κερκίδες του Καραϊσκάκη.'
-    },
-    {
-      id:'aek', ready:false, code:'ΑΕΚ', img:AEK_IMG,
-      nameEN:'AEK', nameGR:'ΑΕΚ',
-      blurbEN:'Yellow and black — colors that don’t compromise.',
-      blurbGR:'Κίτρινο-μαύρο, χρώματα που δεν συμβιβάζονται.'
-    },
-    {
-      id:'paok', ready:false, code:'ΠΑΟΚ', img:PAOK_IMG,
-      nameEN:'PAOK', nameGR:'ΠΑΟΚ',
-      blurbEN:'Black and white, uncompromising passion of the North.',
-      blurbGR:'Μαύρο-άσπρο, ασυμβίβαστο πάθος του Βορρά.'
-    },
-    {
-      id:'aris', ready:false, code:'ΑΡΗΣ', img:ARIS_IMG,
-      nameEN:'Aris', nameGR:'Άρης',
-      blurbEN:'Yellow and black, straight from Thessaloniki’s stands.',
-      blurbGR:'Κίτρινο-μαύρο, περηφάνια της κερκίδας στη Θεσσαλονίκη.'
-    },
-    {
-      id:'iraklis', ready:false, code:'ΗΡΑ', img:IRAKLIS_IMG,
-      nameEN:'Iraklis', nameGR:'Ηρακλής',
-      blurbEN:'Sky blue and white, from one of Thessaloniki’s oldest clubs.',
-      blurbGR:'Γαλανόλευκο, από τις πιο ιστορικές κερκίδες της Θεσσαλονίκης.'
-    }
+  <div class="screen hidden" id="fulltime">
+    <div id="ftLine">ΤΕΛΟΣ ΑΓΩΝΑ</div>
+    <div id="ftScore">0 – 0</div>
+    <div id="ftTeams" class="sub"></div>
+    <button class="btn" id="againBtn">ΞΑΝΑ</button>
+    <button class="btn ghost" id="menuBtn">ΑΛΛΑΓΗ ΟΜΑΔΑΣ</button>
+  </div>
+
+  <div id="reward" class="hidden">
+    <h2 id="rwTitle">ΚΥΠΕΛΛΟΥΧΟΣ!</h2>
+    <div id="rwTeam">—</div>
+    <p id="rwBlurb"></p>
+    <div class="pts">ΠΟΝΤΟΙ<b id="rwPoints">0</b></div>
+    <a class="shopLink" id="rwShop" href="https://petalo24.gr">ΔΕΣ ΤΑ ΜΠΛΟΥΖΑΚΙΑ</a>
+    <div class="boardTitle">ΚΑΤΑΧΩΡΗΣΕ ΤΟ ΣΚΟΡ ΣΟΥ</div>
+    <form id="scoreForm">
+      <input id="scName" type="text" placeholder="Το όνομά σου" maxlength="18" autocomplete="nickname">
+      <button class="btn" type="submit" style="font-size:15px;padding:10px 20px">ΟΚ</button>
+    </form>
+    <div id="scDone"></div>
+    <button class="btn ghost" id="rwClose">ΚΛΕΙΣΙΜΟ</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var srcs = [
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.min.js'
   ];
-
-  var matchdayTeams = [
-    {
-      id:'pao-md', ready:true, code:'ΠΑΟ', imgs:[PAO_MD_SHIRT, PAO_MD_ART],
-      nameEN:'Panathinaikos — Insert Coin', nameGR:'Παναθηναϊκός — Insert Coin',
-      blurbEN:'Green and white, frozen mid-corner in a retro arcade rerun of PAO vs Olympiacos — Kyriakopoulos #77 stepping up.',
-      blurbGR:'Πράσινο-λευκό, παγωμένο σε κόρνερ σε ρετρό arcade rematch ΠΑΟ-Ολυμπιακού — ο Κυριακόπουλος με το 77 έτοιμος.'
-    },
-    {
-      id:'oly-md', ready:true, code:'ΟΣΦΠ', imgs:[OLY_MD_SHIRT, OLY_MD_ART],
-      nameEN:'Olympiacos — Insert Coin', nameGR:'Ολυμπιακός — Insert Coin',
-      blurbEN:'Red and white, corner-kick chaos against Panathinaikos rendered in classic arcade-game style — Chiquinho #22 on the ball.',
-      blurbGR:'Κόκκινο-άσπρο, κόρνερ απέναντι στον Παναθηναϊκό σε στυλ ρετρό arcade — ο Chiquinho με το 22 στην μπάλα.'
-    },
-    {
-      id:'aek-md', ready:true, code:'ΑΕΚ', imgs:[AEK_MD_SHIRT, AEK_MD_ART],
-      nameEN:'AEK — Insert Coin', nameGR:'ΑΕΚ — Insert Coin',
-      blurbEN:'Yellow and black, an AEK–Olympiacos derby frozen in 16-bit stadium lights — R. Marin #18 ready to deliver.',
-      blurbGR:'Κίτρινο-μαύρο, ένα ντέρμπι ΑΕΚ-Ολυμπιακού παγωμένο σε φωτισμό γηπέδου arcade — ο R. Marin με το 18 έτοιμος.'
-    },
-    {
-      id:'paok-md', ready:true, code:'ΠΑΟΚ', imgs:[PAOK_MD_SHIRT, PAOK_MD_ART],
-      nameEN:'PAOK — Insert Coin', nameGR:'ΠΑΟΚ — Insert Coin',
-      blurbEN:'Black and white, PAOK’s corner against Aris rendered like an old-school football video game — A. Zivkovic #14 stepping in.',
-      blurbGR:'Μαύρο-άσπρο, κόρνερ του ΠΑΟΚ απέναντι στον Άρη σε στυλ παλιού arcade ποδοσφαίρου — ο A. Zivkovic με το 14.'
-    },
-    {
-      id:'aris-md', ready:true, code:'ΑΡΗΣ', imgs:[ARIS_MD_SHIRT, ARIS_MD_ART],
-      nameEN:'Aris — Insert Coin', nameGR:'Άρης — Insert Coin',
-      blurbEN:'Yellow and black, Aris lining up a corner against PAOK, straight out of a classic arcade football cabinet — B. Garre #7 on the ball.',
-      blurbGR:'Κίτρινο-μαύρο, ο Άρης σε κόρνερ απέναντι στον ΠΑΟΚ, σαν βγαλμένο από παλιό arcade μηχάνημα — ο B. Garre με το 7.'
-    },
-    {
-      id:'iraklis-md', ready:true, code:'ΗΡΑ', imgs:[IRAKLIS_MD_SHIRT, IRAKLIS_MD_ART],
-      nameEN:'Iraklis — Insert Coin', nameGR:'Ηρακλής — Insert Coin',
-      blurbEN:'Sky blue and white, Iraklis vs PAOK in full retro-arcade broadcast style — C. Soria #30 ready to swing it in.',
-      blurbGR:'Γαλανόλευκο, Ηρακλής εναντίον ΠΑΟΚ σε στυλ ρετρό arcade μετάδοσης — ο C. Soria με το 30 έτοιμος για το σέντρα.'
-    }
-  ];
-
-  var basketballTeams = [
-    {
-      id:'pao-bb', sport:'basketball', ready:true, code:'ΠΑΟ', colorA:'#0E7A3E', colorB:'#F3ECDD', number:7, imgs:[PAO_BB_SHIRT, PAO_BB_ART],
-      nameEN:'Panathinaikos B.C. — GBL Jam', nameGR:'Παναθηναϊκός Μπάσκετ — GBL Jam',
-      blurbEN:'Green and white since 1908 — Nunn and Francisco tag-teaming NBA JAM style for Greece’s most decorated basketball crest.',
-      blurbGR:'Πράσινο-λευκό από το 1908 — οι Nunn και Francisco σε ρυθμό NBA JAM, για το πιο τιτλούχο μπασκετικό σήμα της Ελλάδας.'
-    },
-    {
-      id:'oly-bb', sport:'basketball', ready:true, code:'ΟΣΦΠ', colorA:'#C8202F', colorB:'#F3ECDD', number:11, imgs:[OLY_BB_SHIRT, OLY_BB_ART],
-      nameEN:'Olympiacos B.C. — GBL Jam', nameGR:'Ολυμπιακός Μπάσκετ — GBL Jam',
-      blurbEN:'Red and white since 1925 — Vezenkov and Milutinov on fire, the club that turned the Peace and Friendship Stadium into a fortress.',
-      blurbGR:'Κόκκινο-άσπρο από το 1925 — οι Vezenkov και Milutinov «στις φλόγες», ο σύλλογος που έκανε το ΣΕΦ φρούριο.'
-    },
-    {
-      id:'aek-bb', sport:'basketball', ready:true, code:'ΑΕΚ', colorA:'#F2C230', colorB:'#15101C', number:9, imgs:[AEK_BB_SHIRT, AEK_BB_ART],
-      nameEN:'AEK B.C. — GBL Jam', nameGR:'ΑΕΚ Μπάσκετ — GBL Jam',
-      blurbEN:'Yellow and black, Bartley and Nolley II locked in NBA JAM combo — old-school Athens pride that never compromises.',
-      blurbGR:'Κίτρινο-μαύρο, οι Bartley και Nolley II σε combo στυλ NBA JAM — ιστορική περηφάνια της Αθήνας που δεν συμβιβάζεται.'
-    },
-    {
-      id:'paok-bb', sport:'basketball', ready:true, code:'ΠΑΟΚ', colorA:'#15101C', colorB:'#F3ECDD', number:5, imgs:[PAOK_BB_SHIRT, PAOK_BB_ART],
-      nameEN:'PAOK B.C. — GBL Jam', nameGR:'ΠΑΟΚ Μπάσκετ — GBL Jam',
-      blurbEN:'Black and white since 1926 — Osman and Gray bringing the North’s relentless energy, straight off the trading-card cabinet.',
-      blurbGR:'Μαύρο-άσπρο από το 1926 — οι Osman και Gray με την ασυμβίβαστη ενέργεια του Βορρά, κατευθείαν από την κονσόλα.'
-    },
-    {
-      id:'aris-bb', sport:'basketball', ready:true, code:'ΑΡΗΣ', colorA:'#F2C230', colorB:'#15101C', number:13, imgs:[ARIS_BB_SHIRT, ARIS_BB_ART],
-      nameEN:'Aris B.C. — GBL Jam', nameGR:'Άρης Μπάσκετ — GBL Jam',
-      blurbEN:'Yellow and black, Dimitrijevic and Morgan on fire for Thessaloniki’s basketball pride — arcade legends in the making.',
-      blurbGR:'Κίτρινο-μαύρο, οι Dimitrijevic και Morgan σε φόρμα για τη μπασκετική περηφάνια της Θεσσαλονίκης — θρύλοι του arcade.'
-    },
-    {
-      id:'iraklis-bb', sport:'basketball', ready:true, code:'ΗΡΑ', colorA:'#3FA9E0', colorB:'#F3ECDD', number:15, imgs:[IRAKLIS_BB_SHIRT, IRAKLIS_BB_ART],
-      nameEN:'Iraklis B.C. — GBL Jam', nameGR:'Ηρακλής Μπάσκετ — GBL Jam',
-      blurbEN:'Sky blue and white, Lecque and Melvin tag-teaming for one of Thessaloniki’s oldest basketball crests — old-school heart, NBA JAM energy.',
-      blurbGR:'Γαλανόλευκο, οι Lecque και Melvin σε tag-team για ένα από τα πιο ιστορικά μπασκετικά σήματα της Θεσσαλονίκης — παλιά καρδιά, ενέργεια NBA JAM.'
-    }
-  ];
-
-  var PRICE = 29.90;
-  var SIZES = ['S','M','L','XL','XXL'];
-  var COLORS = [
-    {id:'black', hex:'#141018'},
-    {id:'white', hex:'#F3ECDD'}
-  ];
-
-  var concepts = [
-    {
-      id:'petalo-original', category:'concept',
-      nameEN:'Petalo Original Tee', nameGR:'Petalo Original Tee',
-      blurbEN:'Small Petalo symbol on the front, a larger design on the back. For fans of every team.',
-      blurbGR:'Μικρό σύμβολο Petalo μπροστά, μεγαλύτερο σχέδιο πίσω. Για φιλάθλους κάθε ομάδας.'
-    },
-    {
-      id:'matchday-ritual', category:'concept',
-      nameEN:'Matchday Ritual Tee', nameGR:'Matchday Ritual Tee',
-      blurbEN:'The fan experience, in a design — "since I was a kid in the stands."',
-      blurbGR:'Η εμπειρία του φιλάθλου σε σχέδιο — «από μικρός στην κερκίδα».'
-    },
-    {
-      id:'terrace-culture', category:'concept',
-      nameEN:'Terrace Culture Tee', nameGR:'Terrace Culture Tee',
-      blurbEN:'Greek sports culture in an original design, without copying any specific team.',
-      blurbGR:'Ελληνική αθλητική κουλτούρα σε πρωτότυπο σχέδιο, χωρίς αντιγραφή συγκεκριμένης ομάδας.'
-    }
-  ];
-
-  var products = teams.concat(matchdayTeams).concat(basketballTeams).concat(concepts);
-
-  function findProduct(id){
-    for(var i=0;i<products.length;i++){ if(products[i].id === id) return products[i]; }
-    return null;
+  function chain(list, done) {
+    (function next(i) {
+      if (i >= list.length) return done();
+      var s = document.createElement('script');
+      s.src = list[i];
+      s.onload = function () { next(i + 1); };
+      document.body.appendChild(s);
+    })(0);
   }
-
-  function fmtEUR(n){
-    var s = n.toFixed(2);
-    if(currentLang === 'el') s = s.replace('.', ',');
-    return '€' + s;
-  }
-
-  function showToast(msg){
-    var toast = document.getElementById('toast');
-    if(!toast) return;
-    toast.textContent = msg;
-    toast.classList.add('is-visible');
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(function(){ toast.classList.remove('is-visible'); }, 2200);
-  }
-
-  function jerseyMediaHTML(t){
-    return '<svg viewBox="0 0 200 220">' +
-      '<path d="M60,10 L80,0 Q100,15 120,0 L140,10 L172,42 L148,68 L134,56 L134,204 L66,204 L66,56 L52,68 L28,42 Z" fill="'+t.colorA+'" stroke="var(--gold)" stroke-width="2" stroke-linejoin="round"/>' +
-      '<path d="M77,4 Q100,18 123,4" fill="none" stroke="'+t.colorB+'" stroke-width="6" stroke-linecap="round"/>' +
-      '<svg x="72" y="52" width="36" height="44" viewBox="0 0 100 120">' +
-        '<g clip-path="url(#shieldClip)">' +
-          '<rect x="0" y="0" width="100" height="60" fill="'+t.colorA+'"/>' +
-          '<rect x="0" y="60" width="100" height="60" fill="'+t.colorB+'"/>' +
-        '</g>' +
-        '<path d="M50,4 L94,18 L94,52 Q94,96 50,116 Q6,96 6,52 L6,18 Z" fill="none" stroke="var(--gold)" stroke-width="5"/>' +
-      '</svg>' +
-      '<text x="100" y="182" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="36" fill="'+t.colorB+'" stroke="'+t.colorA+'" stroke-width="1.4" paint-order="stroke fill">'+t.number+'</text>' +
-      '</svg>';
-  }
-  function conceptMediaHTML(){
-    return '<svg viewBox="0 0 200 220"><use href="#teeIcon"/></svg>';
-  }
-  function productMediaHTML(p){
-    if(p.imgs && p.imgs.length > 1) return carouselMediaHTML(p.imgs, p.nameEN||'');
-    if(p.imgs && p.imgs.length === 1) return '<img src="'+p.imgs[0]+'" alt="Petalo × '+(p.nameEN||'')+' — Insert Coin artwork">';
-    if(p.img) return '<img src="'+p.img+'" alt="Petalo × '+(p.nameEN||'')+' — Insert Coin artwork">';
-    if(p.colorA) return jerseyMediaHTML(p);
-    return conceptMediaHTML();
-  }
-  function carouselMediaHTML(imgs, nameEN){
-    var slides = imgs.map(function(src,i){
-      return '<img class="pmedia-slide" src="'+src+'" alt="Petalo × '+nameEN+' — Insert Coin artwork '+(i+1)+'">';
-    }).join('');
-    var dots = imgs.map(function(_,i){
-      return '<button type="button" class="pmedia-dot'+(i===0?' active':'')+'" data-i="'+i+'" aria-label="Slide '+(i+1)+'"></button>';
-    }).join('');
-    return '<div class="pmedia-carousel">' +
-      '<div class="pmedia-track">'+slides+'</div>' +
-      '<button type="button" class="pmedia-nav prev" aria-label="Previous image">‹</button>' +
-      '<button type="button" class="pmedia-nav next" aria-label="Next image">›</button>' +
-      '<div class="pmedia-dots">'+dots+'</div>' +
-    '</div>';
-  }
-  function initCarousels(scope){
-    (scope||document).querySelectorAll('.pmedia-carousel:not([data-cinit])').forEach(function(car){
-      car.setAttribute('data-cinit','1');
-      var track = car.querySelector('.pmedia-track');
-      var slides = car.querySelectorAll('.pmedia-slide');
-      var dots = car.querySelectorAll('.pmedia-dot');
-      var idx = 0;
-      function go(i){
-        idx = (i + slides.length) % slides.length;
-        track.style.transform = 'translateX(-' + (idx * 100) + '%)';
-        dots.forEach(function(d,di){ d.classList.toggle('active', di === idx); });
-      }
-      var prevBtn = car.querySelector('.pmedia-nav.prev');
-      var nextBtn = car.querySelector('.pmedia-nav.next');
-      if(prevBtn) prevBtn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); go(idx - 1); });
-      if(nextBtn) nextBtn.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); go(idx + 1); });
-      dots.forEach(function(d, di){
-        d.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); go(di); });
-      });
-      var startX = null;
-      track.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
-      track.addEventListener('touchend', function(e){
-        if(startX === null) return;
-        var dx = e.changedTouches[0].clientX - startX;
-        if(Math.abs(dx) > 30) go(idx + (dx < 0 ? 1 : -1));
-        startX = null;
-      });
-    });
-  }
-
-  var STR = {
-    en:{
-      nav_drop:'Drop 01', nav_about:'The Story', nav_contact:'Contact', nav_ig:'Instagram ↗',
-      nav_drop2:'Drop 03',
-      nav_drop3:'Drop 02',
-      eyebrow_hero:'Greek Fan Culture',
-      hero_h1:'Born In<br>The Stands.',
-      hero_tagline:'“For those who live the game from the stands.”',
-      hero_sub:'Original T-shirts inspired by Greek sports culture, the stands, and everything that happens on matchday.',
-      cta:'See Drop 01',
-      drop_eyebrow:'Collection 001 — From The Stands',
-      drop_title:'Drop 01',
-      drop2_eyebrow:'Collection 003 — From The Court',
-      drop2_title:'Drop 03',
-      drop3_eyebrow:'Collection 002 — Insert Coin',
-      drop3_title:'Drop 02',
-      pill_ready:'Fan Concept · Ready',
-      pill_design:'Fan Concept · In The Works',
-      note_fanconcept:'Fan concept — not an official product or team merchandise.',
-      concepts_heading:'Also in the works',
-      concept1_name:'Petalo Original Tee',
-      concept1_blurb:'Small Petalo symbol on the front, a larger design on the back. For fans of every team.',
-      concept2_name:'Matchday Ritual Tee',
-      concept2_blurb:'The fan experience, in a design — "since I was a kid in the stands."',
-      concept3_name:'Stands Culture Tee',
-      concept3_blurb:'Greek sports culture in an original design, without copying any specific team.',
-      about_eyebrow:'The Story',
-      about_lede:'For those who live the game from the stands.',
-      about_body:'Petalo was created for those who don’t just watch a match, but live everything around it. We design original apparel inspired by fan culture, without trying to replace the official team kits. Small drops, authentic designs, and stories that make sense to anyone who’s stood in the stands.',
-      about_pull:'The stands aren’t background noise. They’re the reason the game sounds different.',
-      about_photo_caption:'From the Petalo archive',
-      how_eyebrow:'How the first drop will work',
-      how1_title:'Made to Order', how1_body:'Each piece is printed once your order is placed — no stock held.',
-      how2_title:'Original Designs', how2_body:'Inspired by sports and fan culture, never official merchandise.',
-      how3_title:'Tracked Shipping', how3_body:'You’ll get a tracking update the moment your order ships.',
-      facts_name_label:'Name', facts_name_value:'Petalo — from "pétalo"',
-      facts_logo_label:'Logo inspiration', facts_logo_value:'Panathenaic Stadium',
-      facts_ig_label:'Instagram',
-      facts_designs_label:'Designs', facts_designs_value:'100% original',
-      facts_drop_label:'First Drop', facts_drop_value:'Coming soon',
-      contact_title:'Be First in the Stands',
-      contact_body:'New drops, new stories, and limited releases from Petalo.',
-      stamp:'First Drop Coming Soon',
-      footer_copyright:'© Petalo',
-      footer_tagline:'For those who live the game from the stands.',
-      count:function(ready,design){ return ready + ' ready · ' + design + ' in the works'; },
-      nav_shop:'Shop',
-      shop_eyebrow:'Full Collection',
-      shop_title:'Shop',
-      shop_sub:'Fan concepts for Greek clubs. Tell us which ones you\u2019d actually buy.',
-      shop_all_cta:'Shop the Full Collection →',
-      shop_count:function(n){ return n + ' designs'; },
-      size_label:'Size',
-      color_label:'Color',
-      color_black:'Black',
-      color_white:'White',
-      qty_label:'Qty',
-      add_to_cart:'Add to Cart',
-      back_to_shop:'← Back to Shop',
-      product_not_found:'This design isn\u2019t available.',
-      cart_eyebrow:'Order',
-      cart_title:'Your Cart',
-      cart_empty:'Your cart is empty.',
-      continue_shopping:'Continue Shopping',
-      remove_label:'Remove',
-      subtotal_label:'Subtotal',
-      shipping_label:'Shipping',
-      free_shipping:'Free',
-      shipping_note:'Free shipping on orders over €55. Greece only, made to order.',
-      total_label:'Total',
-      checkout_cta:'Proceed to Checkout',
-      checkout_eyebrow:'Almost there',
-      checkout_title:'Checkout',
-      checkout_shipping_heading:'Shipping Details',
-      full_name_label:'Full Name',
-      address_label:'Address',
-      city_label:'City',
-      postal_label:'Postal Code',
-      phone_label:'Phone',
-      email_label:'Email',
-      country_label:'Country',
-      country_value:'Greece',
-      payment_heading:'Payment',
-      payment_card_label:'Card',
-      payment_note:'Prototype checkout — no real payment is processed.',
-      place_order_cta:'Place Order',
-      order_summary_heading:'Order Summary',
-      confirmation_title:'Order Confirmed',
-      confirmation_body:'Thanks — this is a prototype order, so nothing was charged and nothing ships. A real Petalo checkout will work just like this.',
-      order_number_label:'Order Number',
-      toast_added:'Added to cart',
-      survey_question:'Would you buy this?',
-      survey_yes:'Yes, I’d buy it',
-      survey_no:'Not for me',
-      survey_email_placeholder:'you@email.com',
-      survey_email_cta:'Notify Me',
-      survey_thanks_yes:'Thanks — you’re on the list.',
-      survey_thanks_no:'Thanks for the feedback.',
-      survey_note:'A quick gut check before we go into production — this isn’t a live order yet.'
-    },
-    el:{
-      nav_drop:'Drop 01', nav_about:'Η Ιστορία', nav_contact:'Επικοινωνία', nav_ig:'Instagram ↗',
-      nav_drop2:'Drop 03',
-      nav_drop3:'Drop 02',
-      eyebrow_hero:'Greek Fan Culture',
-      hero_h1:'Η Κερκίδα<br>Φοριέται.',
-      hero_tagline:'«Για αυτούς που ζουν το παιχνίδι από την κερκίδα.»',
-      hero_sub:'Πρωτότυπα T-shirts εμπνευσμένα από την ελληνική αθλητική κουλτούρα, τις εξέδρες και όλα όσα συμβαίνουν γύρω από τον αγώνα.',
-      cta:'Δες το Drop 01',
-      drop_eyebrow:'Collection 001 — From The Terrace',
-      drop_title:'Drop 01',
-      drop2_eyebrow:'Collection 003 — Από Το Παρκέ',
-      drop2_title:'Drop 03',
-      drop3_eyebrow:'Συλλογή 002 — Insert Coin',
-      drop3_title:'Drop 02',
-      pill_ready:'Fan Concept · Έτοιμο',
-      pill_design:'Fan Concept · Σχεδιάζεται',
-      note_fanconcept:'Fan concept — όχι επίσημο προϊόν ή εμπόρευμα ομάδας.',
-      concepts_heading:'Επίσης υπό σχεδιασμό',
-      concept1_name:'Petalo Original Tee',
-      concept1_blurb:'Μικρό σύμβολο Petalo μπροστά, μεγαλύτερο σχέδιο πίσω. Για φιλάθλους κάθε ομάδας.',
-      concept2_name:'Matchday Ritual Tee',
-      concept2_blurb:'Η εμπειρία του φιλάθλου σε σχέδιο — «από μικρός στην κερκίδα».',
-      concept3_name:'Terrace Culture Tee',
-      concept3_blurb:'Ελληνική αθλητική κουλτούρα σε πρωτότυπο σχέδιο, χωρίς αντιγραφή συγκεκριμένης ομάδας.',
-      about_eyebrow:'Η Ιστορία',
-      about_lede:'Για αυτούς που ζουν το παιχνίδι από την κερκίδα.',
-      about_body:'Το Petalo δημιουργήθηκε για όσους δεν παρακολουθούν απλώς έναν αγώνα, αλλά ζουν όλα όσα υπάρχουν γύρω του. Σχεδιάζουμε πρωτότυπα ρούχα εμπνευσμένα από την κουλτούρα των φιλάθλων, χωρίς να προσπαθούμε να αντικαταστήσουμε τις επίσημες εμφανίσεις των ομάδων. Μικρά drops, αυθεντικά σχέδια και ιστορίες που καταλαβαίνουν όσοι έχουν βρεθεί στην κερκίδα.',
-      about_pull:'Η κερκίδα δεν είναι background. Είναι ο λόγος που το παιχνίδι ακούγεται διαφορετικά.',
-      about_photo_caption:'Από το αρχείο του Petalo',
-      how_eyebrow:'Πώς θα λειτουργεί το πρώτο drop',
-      how1_title:'Παραγωγή κατά παραγγελία', how1_body:'Κάθε κομμάτι θα τυπώνεται όταν ολοκληρώνεται η παραγγελία σου — χωρίς αποθέματα.',
-      how2_title:'Πρωτότυπα σχέδια', how2_body:'Εμπνευσμένα από την αθλητική και οπαδική κουλτούρα, όχι επίσημο merchandise.',
-      how3_title:'Αποστολή με ενημέρωση', how3_body:'Μήνυμα παρακολούθησης μόλις η παραγγελία σου φύγει για αποστολή.',
-      facts_name_label:'Όνομα', facts_name_value:'Petalo — από το «πέταλο»',
-      facts_logo_label:'Έμπνευση λογότυπου', facts_logo_value:'Παναθηναϊκό Στάδιο',
-      facts_ig_label:'Instagram',
-      facts_designs_label:'Σχέδια', facts_designs_value:'100% πρωτότυπα',
-      facts_drop_label:'Πρώτο Drop', facts_drop_value:'Έρχεται σύντομα',
-      contact_title:'Μπες Πρώτος στην Κερκίδα',
-      contact_body:'Νέα drops, νέες ιστορίες και περιορισμένες κυκλοφορίες από το Petalo.',
-      stamp:'Το πρώτο drop έρχεται σύντομα',
-      footer_copyright:'© Petalo',
-      footer_tagline:'Για αυτούς που ζουν το παιχνίδι από την κερκίδα.',
-      count:function(ready,design){ return ready + ' έτοιμο · ' + design + ' σε σχεδιασμό'; },
-      nav_shop:'Κατάστημα',
-      shop_eyebrow:'Όλη η Συλλογή',
-      shop_title:'Κατάστημα',
-      shop_sub:'Σχέδια για ελληνικές ομάδες. Πες μας ποια θα αγόραζες.',
-      shop_all_cta:'Δες όλη τη συλλογή →',
-      shop_count:function(n){ return n + ' σχέδια'; },
-      size_label:'Μέγεθος',
-      color_label:'Χρώμα',
-      color_black:'Μαύρο',
-      color_white:'Λευκό',
-      qty_label:'Ποσότητα',
-      add_to_cart:'Προσθήκη στο Καλάθι',
-      back_to_shop:'← Πίσω στο κατάστημα',
-      product_not_found:'Αυτό το σχέδιο δεν είναι διαθέσιμο.',
-      cart_eyebrow:'Παραγγελία',
-      cart_title:'Το Καλάθι σου',
-      cart_empty:'Το καλάθι σου είναι άδειο.',
-      continue_shopping:'Συνέχεια Αγορών',
-      remove_label:'Αφαίρεση',
-      subtotal_label:'Υποσύνολο',
-      shipping_label:'Μεταφορικά',
-      free_shipping:'Δωρεάν',
-      shipping_note:'Δωρεάν μεταφορικά για παραγγελίες άνω των €55. Μόνο Ελλάδα, κατά παραγγελία.',
-      total_label:'Σύνολο',
-      checkout_cta:'Ολοκλήρωση Παραγγελίας',
-      checkout_eyebrow:'Ένα βήμα πριν',
-      checkout_title:'Ολοκλήρωση Παραγγελίας',
-      checkout_shipping_heading:'Στοιχεία Αποστολής',
-      full_name_label:'Ονοματεπώνυμο',
-      address_label:'Διεύθυνση',
-      city_label:'Πόλη',
-      postal_label:'Ταχυδρομικός Κώδικας',
-      phone_label:'Τηλέφωνο',
-      email_label:'Email',
-      country_label:'Χώρα',
-      country_value:'Ελλάδα',
-      payment_heading:'Πληρωμή',
-      payment_card_label:'Κάρτα',
-      payment_note:'Πρωτότυπο checkout — δεν πραγματοποιείται καμία πραγματική χρέωση.',
-      place_order_cta:'Ολοκλήρωση Παραγγελίας',
-      order_summary_heading:'Σύνοψη Παραγγελίας',
-      confirmation_title:'Η Παραγγελία Επιβεβαιώθηκε',
-      confirmation_body:'Ευχαριστούμε — αυτή είναι μια πρωτότυπη παραγγελία, οπότε δεν έγινε καμία χρέωση και δεν θα σταλεί τίποτα. Ένα πραγματικό checkout του Petalo θα λειτουργεί ακριβώς έτσι.',
-      order_number_label:'Αριθμός Παραγγελίας',
-      toast_added:'Προστέθηκε στο καλάθι',
-      survey_question:'Θα το αγόραζες;',
-      survey_yes:'Ναι, θα το αγόραζα',
-      survey_no:'Όχι για μένα',
-      survey_email_placeholder:'to@email.gr',
-      survey_email_cta:'Ενημέρωσέ με',
-      survey_thanks_yes:'Ευχαριστούμε — μπήκες στη λίστα.',
-      survey_thanks_no:'Ευχαριστούμε για τη γνώμη σου.',
-      survey_note:'Γρήγορος έλεγχος ενδιαφέροντος πριν μπούμε σε παραγωγή — δεν είναι ακόμα πραγματική παραγγελία.'
-    }
-  };
-
-  var currentLang = 'en';
-  try{
-    var saved = localStorage.getItem('petalo-lang');
-    if(saved === 'en' || saved === 'el') currentLang = saved;
-  }catch(e){}
-
-  var SURVEY_VOTED_PREFIX = 'petalo-voted-';
-  function votedValue(productId){
-    try{ return localStorage.getItem(SURVEY_VOTED_PREFIX+productId); }catch(e){ return null; }
-  }
-  function markVoted(productId, vote){
-    try{ localStorage.setItem(SURVEY_VOTED_PREFIX+productId, vote); }catch(e){}
-  }
-
-  function recordSurveyResponse(productId, vote, email){
-    markVoted(productId, vote);
-    fetch('/api/vote', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({product: productId, vote: vote, email: email || ''})
-    }).catch(function(){ /* vote is already remembered locally via markVoted */ });
-  }
-
-  function surveyWidgetHTML(productId){
-    var voted = votedValue(productId);
-    if(voted === 'yes') return '<div class="survey-thanks">'+STR[currentLang].survey_thanks_yes+'</div>';
-    if(voted === 'no') return '<div class="survey-thanks">'+STR[currentLang].survey_thanks_no+'</div>';
-    return (
-      '<div class="survey" data-survey data-product-id="'+productId+'">' +
-        '<span class="option-label">'+STR[currentLang].survey_question+'</span>' +
-        '<div class="survey-btns" data-survey-btns>' +
-          '<button type="button" class="survey-btn is-yes" data-survey-yes>'+STR[currentLang].survey_yes+'</button>' +
-          '<button type="button" class="survey-btn is-no" data-survey-no>'+STR[currentLang].survey_no+'</button>' +
-        '</div>' +
-      '</div>'
-    );
-  }
-
-  function wireSurveyWidgets(root){
-    if(!root) return;
-    root.querySelectorAll('[data-survey]').forEach(function(box){
-      var pid = box.getAttribute('data-product-id');
-      var btnsWrap = box.querySelector('[data-survey-btns]');
-      var noBtn = box.querySelector('[data-survey-no]');
-      var yesBtn = box.querySelector('[data-survey-yes]');
-      if(noBtn){
-        noBtn.addEventListener('click', function(){
-          recordSurveyResponse(pid, 'no', '');
-          var parent = box.parentNode;
-          box.outerHTML = surveyWidgetHTML(pid);
-          wireSurveyWidgets(parent);
-        });
-      }
-      if(yesBtn){
-        yesBtn.addEventListener('click', function(){
-          btnsWrap.classList.add('survey-email');
-          btnsWrap.innerHTML =
-            '<input type="email" inputmode="email" placeholder="'+STR[currentLang].survey_email_placeholder+'" data-survey-email>' +
-            '<button type="button" class="survey-submit" data-survey-submit>'+STR[currentLang].survey_email_cta+'</button>';
-          var emailInput = btnsWrap.querySelector('[data-survey-email]');
-          var submitBtn = btnsWrap.querySelector('[data-survey-submit]');
-          function submit(){
-            var email = (emailInput.value || '').trim();
-            if(!email || email.indexOf('@') === -1){ emailInput.focus(); return; }
-            recordSurveyResponse(pid, 'yes', email);
-            var parent = box.parentNode;
-            box.outerHTML = surveyWidgetHTML(pid);
-            wireSurveyWidgets(parent);
-          }
-          submitBtn.addEventListener('click', submit);
-          emailInput.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); submit(); } });
-          emailInput.focus();
-        });
-      }
-    });
-  }
-
-  function teamCardHTML(t){
-    var name = currentLang === 'el' ? t.nameGR : t.nameEN;
-    var blurb = currentLang === 'el' ? t.blurbGR : t.blurbEN;
-    var pill = t.ready ? STR[currentLang].pill_ready : STR[currentLang].pill_design;
-    var pillClass = t.ready ? 'ready' : 'design';
-    var media = productMediaHTML(t);
-    return '<a class="team-card" href="#/product/'+t.id+'">' +
-      '<div class="team-media">'+media+'</div>' +
-      '<div class="team-body">' +
-        '<span class="pill '+pillClass+'">'+pill+'</span>' +
-        '<span class="sub">PETALO × '+name+'</span>' +
-        '<h3>'+name+'</h3>' +
-        '<p class="blurb">'+blurb+'</p>' +
-        '<p class="note">'+STR[currentLang].note_fanconcept+'</p>' +
-      '</div>' +
-    '</a>';
-  }
-
-  function shopCardHTML(p){
-    var name = currentLang === 'el' ? p.nameGR : p.nameEN;
-    var media = productMediaHTML(p);
-    return '<div class="shop-card">' +
-      '<a class="shop-card-media" href="#/product/'+p.id+'">'+media+'</a>' +
-      '<div class="shop-card-body">' +
-        '<a class="shop-card-name" href="#/product/'+p.id+'"><h3>'+name+'</h3></a>' +
-        '<span class="shop-card-price">'+fmtEUR(PRICE)+'</span>' +
-        '<div class="shop-card-form">'+surveyWidgetHTML(p.id)+'</div>' +
-      '</div>' +
-    '</div>';
-  }
-
-  function renderShop(){
-    var grid = document.getElementById('shopGrid');
-    if(!grid) return;
-    grid.innerHTML = products.map(shopCardHTML).join('');
-    var countEl = document.getElementById('shopCount');
-    if(countEl) countEl.textContent = STR[currentLang].shop_count(products.length);
-    wireSurveyWidgets(grid);
-    initCarousels(grid);
-  }
-
-  function renderProduct(id){
-    var el = document.getElementById('productLayout');
-    if(!el) return;
-    var p = findProduct(id);
-    if(!p){
-      el.innerHTML = '<p class="empty-state">'+STR[currentLang].product_not_found+'</p>';
+  function go(i) {
+    if (i >= srcs.length) {
+      document.getElementById('pickLabel').textContent =
+        'Δεν φόρτωσε η 3D βιβλιοθήκη. Δοκίμασε ανανέωση της σελίδας.';
       return;
     }
-    var name = currentLang === 'el' ? p.nameGR : p.nameEN;
-    var blurb = currentLang === 'el' ? p.blurbGR : p.blurbEN;
-    var media = productMediaHTML(p);
-
-    el.innerHTML =
-      '<div class="product-media">'+media+'</div>' +
-      '<div class="product-info">' +
-        '<span class="sub">PETALO \u00d7 '+name+'</span>' +
-        '<h1>'+name+'</h1>' +
-        '<span class="product-price">'+fmtEUR(PRICE)+'</span>' +
-        '<p class="product-blurb">'+blurb+'</p>' +
-        '<p class="note">'+STR[currentLang].note_fanconcept+'</p>' +
-        surveyWidgetHTML(p.id) +
-        '<p class="shipping-note">'+STR[currentLang].survey_note+'</p>' +
-      '</div>';
-
-    wireSurveyWidgets(el);
-    initCarousels(el);
+    var s = document.createElement('script');
+    s.src = srcs[i];
+    s.onload = function () { chain(['brand.js', 'look.js', 'game.js'], function () {}); };
+    s.onerror = function () { go(i + 1); };
+    document.body.appendChild(s);
   }
-
-  function currentRoute(){
-    var h = window.location.hash || '';
-    if(h.indexOf('#/') === 0) return h.slice(2);
-    return null;
-  }
-
-  function showView(name){
-    document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('is-active'); });
-    var el = document.getElementById('view-'+name);
-    if(el) el.classList.add('is-active');
-  }
-
-  function renderCurrentView(){
-    var route = currentRoute();
-    if(!route) return;
-    var parts = route.split('/');
-    if(parts[0] === 'shop') renderShop();
-    else if(parts[0] === 'product' && parts[1]) renderProduct(parts[1]);
-  }
-
-  function handleRoute(){
-    var route = currentRoute();
-    var view = 'home';
-    if(route){
-      var parts = route.split('/');
-      if(parts[0] === 'shop') view = 'shop';
-      else if(parts[0] === 'product') view = 'product';
-    }
-    showView(view);
-    renderCurrentView();
-    if(route) window.scrollTo(0,0);
-  }
-
-  function render(){
-    var grid = document.getElementById('teamGrid');
-    if(grid) grid.innerHTML = teams.map(teamCardHTML).join('');
-
-    var readyCount = teams.filter(function(t){return t.ready;}).length;
-    var designCount = teams.length - readyCount;
-    var countEl = document.getElementById('dropCount');
-    if(countEl) countEl.textContent = STR[currentLang].count(readyCount, designCount);
-
-    var d3grid = document.getElementById('drop3Grid');
-    if(d3grid) d3grid.innerHTML = matchdayTeams.map(teamCardHTML).join('');
-
-    var mdReadyCount = matchdayTeams.filter(function(t){return t.ready;}).length;
-    var mdDesignCount = matchdayTeams.length - mdReadyCount;
-    var mdCountEl = document.getElementById('dropCount3');
-    if(mdCountEl) mdCountEl.textContent = STR[currentLang].count(mdReadyCount, mdDesignCount);
-    var bgrid = document.getElementById('bballGrid');
-    if(bgrid) bgrid.innerHTML = basketballTeams.map(teamCardHTML).join('');
-
-    var bballReadyCount = basketballTeams.filter(function(t){return t.ready;}).length;
-    var bballDesignCount = basketballTeams.length - bballReadyCount;
-    var bballCountEl = document.getElementById('dropCount2');
-    if(bballCountEl) bballCountEl.textContent = STR[currentLang].count(bballReadyCount, bballDesignCount);
-
-    initCarousels(document);
-
-    document.querySelectorAll('[data-i18n]').forEach(function(el){
-      var key = el.getAttribute('data-i18n');
-      var val = STR[currentLang][key];
-      if(val == null) return;
-      if(el.hasAttribute('data-i18n-html')) el.innerHTML = val;
-      else el.textContent = val;
-    });
-
-    document.querySelectorAll('[data-lang-btn]').forEach(function(btn){
-      btn.setAttribute('aria-pressed', btn.getAttribute('data-lang-btn') === currentLang ? 'true' : 'false');
-    });
-
-    try{ document.documentElement.lang = currentLang; }catch(e){}
-  }
-
-  function setLang(lang){
-    currentLang = lang;
-    try{ localStorage.setItem('petalo-lang', lang); }catch(e){}
-    render();
-    renderCurrentView();
-  }
-
-  document.querySelectorAll('[data-lang-btn]').forEach(function(btn){
-    btn.addEventListener('click', function(){ setLang(btn.getAttribute('data-lang-btn')); });
-  });
-
-  render();
-  handleRoute();
-  window.addEventListener('hashchange', handleRoute);
+  go(0);
 })();
 </script>
 
-</body></html>
+</body>
+</html>
